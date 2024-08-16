@@ -1,3 +1,3 @@
 -std=c11
 -I.
-
+-DLIBC2_IMPLEMENTATION
