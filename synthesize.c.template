@@ -1,0 +1,25 @@
+Every line that does not start with ++ will be ignored.
+The files will be included in order, their references to local
+files will be removed.
+
+Essential Definitions:
+	++prelude.h
+
+Basic Interfaces & Error handling;
+	++mem.h
+	++io.h
+	++assert.h
+
+Allocator Essentials:
+	++arena_allocator.h
+	++heap_allocator.h
+
+String and text processing:
+	++utf8.h
+	++string.h
+
+Utility data structures:
+	++bytes_buffer.h
+
+Other:
+	++testing.h

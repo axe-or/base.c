@@ -16,6 +16,7 @@ for f in *.c; do
 done
 wait
 
-Run $cc bin/*.o $ldflags -o test.bin
+Run ar rcs bin/libc2.a bin/*.o
+Run $cc bin/libc2.a $ldflags -o test.bin
 
 ./test.bin

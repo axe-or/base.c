@@ -35,18 +35,6 @@ void arena_free_all(Mem_Arena* a){
 	a->offset = 0;
 }
 
-void arena_init(Mem_Arena* a, byte* data, isize len){
-	a->capacity = len;
-	a->data = data;
-	a->offset = 0;
-}
-
-void arena_destroy(Mem_Arena* a){
-	arena_free_all(a);
-	a->capacity = 0;
-	a->data = NULL;
-}
-
 static
 void* arena_allocator_func(
 	void* impl,
@@ -88,4 +76,15 @@ Mem_Allocator arena_allocator(Mem_Arena* a){
 	return allocator;
 }
 
+void arena_init(Mem_Arena* a, byte* data, isize len){
+	a->capacity = len;
+	a->data = data;
+	a->offset = 0;
+}
+
+void arena_destroy(Mem_Arena* a){
+	arena_free_all(a);
+	a->capacity = 0;
+	a->data = NULL;
+}
 

@@ -1,11 +1,10 @@
-#include "testing.h"
-
-// #include all your test files here.
 #include "tests/bytes_buffer_test.c"
 #include "tests/utf8_test.c"
+#include "tests/arena_test.c"
 
 int main(){
-	// Run all your tests
+	// Run all tests
 	test_bytes_buffer();
 	test_utf8();
+	test_arena();
 }
