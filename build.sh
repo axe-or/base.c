@@ -8,15 +8,6 @@ Run(){ echo "$@"; $@; }
 
 Obj(){ echo "$1" | sed 's/\.c$/.o/'; }
 
-mkdir -p ./bin
-
-set -e
-for f in *.c; do
-	Run $cc $cflags -c "$f" -o "bin/$(Obj "$f")" &
-done
-wait
-
-Run ar rcs bin/libc2.a bin/*.o
-Run $cc bin/libc2.a $ldflags -o test.bin
+Run $cc $cflags main.c $ldflags -o test.bin
 
 ./test.bin
