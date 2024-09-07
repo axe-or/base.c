@@ -76,7 +76,7 @@ void* arena_allocator_func(
 		case Mem_Op_Free: {} break;
 
 		case Mem_Op_Query: {
-			*capabilities = Allocator_Alloc_Any | Allocator_Free_All;
+			*capabilities = Allocator_Alloc_Any | Allocator_Free_All | Allocator_Align_Any;
 		} break;
 	}
 

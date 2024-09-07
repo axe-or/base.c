@@ -20,6 +20,7 @@ enum Allocator_Capability {
 	Allocator_Free_Any  = 1 << 1,
 	Allocator_Free_All  = 1 << 2,
 	Allocator_Resize    = 1 << 3,
+	Allocator_Align_Any = 1 << 4,
 };
 
 typedef void* (*Mem_Allocator_Func) (
