@@ -2,6 +2,7 @@
 #include "tests/bytes_buffer_test.c"
 #include "tests/utf8_test.c"
 #include "tests/arena_test.c"
+#include "tests/string_test.c"
 
 int main(){
 	// Run all tests

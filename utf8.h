@@ -3,18 +3,16 @@
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 
-#define UTF8_ERROR ((i32)0xfffd)
+// #define UTF8_ERROR ((i32)0xfffd)
+
 
 #define UTF8_RANGE1 ((i32)0x7f)
 #define UTF8_RANGE2 ((i32)0x7ff)
 #define UTF8_RANGE3 ((i32)0xffff)
 #define UTF8_RANGE4 ((i32)0x10ffff)
 
-typedef struct {
-	byte data[4];
-} Codepoint_Bytes;
-
 typedef i32 Codepoint;
+
 
 typedef struct {
 	byte bytes[4];
@@ -25,6 +23,13 @@ typedef struct {
 	Codepoint codepoint;
 	i8 len;
 } UTF8_Decode_Result;
+
+static const Codepoint UTF8_ERROR = 0xfffd;
+
+static const UTF8_Encode_Result UTF8_ERROR_ENCODED = {
+	.bytes = {0xef, 0xbf, 0xbd},
+	.len = 3,
+};
 
 static inline
 bool utf8_continuation_byte(byte b){
@@ -60,7 +65,13 @@ UTF8_Decode_Result utf8_decode(byte const* data, isize len);
 
 UTF8_Encode_Result utf8_encode(Codepoint c){
 	UTF8_Encode_Result res = {0};
-	// TODO: Prevent invalid codepoints
+
+	if((c >= CONTINUATION1 && c <= CONTINUATION2) ||
+	   (c >= SURROGATE1 && c <= SURROGATE2) ||
+	   (c > UTF8_RANGE4))
+	{
+		return UTF8_ERROR_ENCODED;
+	}
 
 	if(c <= UTF8_RANGE1){
 		res.len = 1;
@@ -137,5 +148,18 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 
 	return res;
 }
+
+#undef SURROGATE2
+#undef SURROGATE1
+#undef MASK2
+#undef MASK3
+#undef MASK4
+#undef MASKX
+#undef SIZE2
+#undef SIZE3
+#undef SIZE4
+#undef CONT
+#undef CONTINUATION1
+#undef CONTINUATION2
 
 #endif

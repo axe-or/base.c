@@ -4,7 +4,7 @@
 #include "prelude.h"
 #include "mem.h"
 
-// Helper to use with printf
+// Helper to use with printf "%.*s"
 #define FMT_STRING(str_) (int)((str_).len), (str_).data
 
 typedef struct {
@@ -22,20 +22,28 @@ isize cstring_len(cstring cstr){
 	return size;
 }
 
+// Create substring from a cstring
 String str_from(cstring data);
 
+// Create substring from a piece of a cstring
 String str_from_range(cstring data, isize start, isize length);
 
+// Create substring from a raw slice of bytes
 String str_from_bytes(byte const* data, isize length);
 
+// Get a sub string, starting at `start` with `length`
 String str_sub(String s, isize start, isize length);
 
+// Clone a string
 String str_clone(String s, Mem_Allocator allocator);
 
+// Destroy a string
 void str_destroy(String s, Mem_Allocator allocator);
 
+// Concatenate 2 strings
 String str_concat(String a, String b, Mem_Allocator allocator);
 
+// Check if 2 strings are equal
 bool str_eq(String a, String b);
 
 // Implementation //////////////////////////////////////////////////////////////
