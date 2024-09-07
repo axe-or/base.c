@@ -36,7 +36,7 @@ isize io_read(IO_Reader r, byte* buf, isize buflen);
 
 // Write into buffer, returns number of bytes written to buffer. On error returns
 // the negative valued IO_Error code.
-isize io_write(IO_Writer r, byte* buf, isize buflen);
+isize io_write(IO_Writer r, byte const* buf, isize buflen);
 
 // Query the capabilites of the IO stream as per IO_Operation
 i8 io_query_stream(IO_Stream s);
@@ -62,9 +62,9 @@ isize io_read(IO_Reader r, byte* buf, isize buflen){
 	return s.func(s.impl, IO_Op_Read, buf, buflen);
 }
 
-isize io_write(IO_Writer w, byte* buf, isize buflen){
+isize io_write(IO_Writer w, byte const* buf, isize buflen){
 	IO_Stream s = w._stream;
-	return s.func(s.impl, IO_Op_Write, buf, buflen);
+	return s.func(s.impl, IO_Op_Write, (byte*)(buf), buflen);
 }
 
 IO_Reader io_to_reader(IO_Stream s){

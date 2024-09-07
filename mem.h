@@ -70,7 +70,11 @@ void* mem_alloc(Mem_Allocator allocator, isize size, isize align);
 // Re-allocate memory in-place without changing the original pointer. Returns NULL on failure.
 void* mem_resize(Mem_Allocator allocator, void* ptr, isize new_size);
 
-// Free pointer of memory, freeing NULL is a no-op
+// Free pointer to memory, includes alignment information, which is required for
+// some allocators, freeing NULL is a no-op
+void mem_free_ex(Mem_Allocator allocator, void* p, isize align);
+
+// Free pointer to memory, freeing NULL is a no-op
 void mem_free(Mem_Allocator allocator, void* p);
 
 // Free all pointers owned by allocator
@@ -98,9 +102,13 @@ void* mem_resize(Mem_Allocator allocator, void* ptr, isize new_size){
 	return new_ptr;
 }
 
-void mem_free(Mem_Allocator allocator, void* p){
+void mem_free_ex(Mem_Allocator allocator, void* p, isize align){
 	if(p == NULL){ return; }
-	allocator.func(allocator.data, Mem_Op_Free, p, 0, 0, NULL);
+	allocator.func(allocator.data, Mem_Op_Free, p, 0, align, NULL);
+}
+
+void mem_free(Mem_Allocator allocator, void* p){
+	mem_free_ex(allocator, p, 0);
 }
 
 void mem_free_all(Mem_Allocator allocator){

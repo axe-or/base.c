@@ -39,3 +39,4 @@ with zf.ZipFile(OUT_ARCHIVE, 'w', compression=zf.ZIP_LZMA) as zfile:
 
     zfile.write(OUT_SRC, f'{src_dir}/{OUT_SRC}')
     print(f'Created {OUT_ARCHIVE}')
+

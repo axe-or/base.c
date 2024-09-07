@@ -2,6 +2,7 @@
 
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
+#include "io.h"
 #include "mem.h"
 
 typedef struct {
@@ -37,13 +38,38 @@ void buffer_clean_read_bytes(Bytes_Buffer* bb);
 isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size);
 
 // Push bytes to the end of builder, returns success status
-bool buffer_write(Bytes_Buffer* bb, byte const * b, isize len);
+bool buffer_write(Bytes_Buffer* bb, byte const* b, isize len);
 
 // Current unread bytes, this pointer becomes invalid as soon as the buffer is modified.
 byte* buffer_bytes(Bytes_Buffer* bb);
 
+IO_Stream buffer_stream(Bytes_Buffer* bb);
+
+// typedef isize (*IO_Func)(void* impl, IO_Operation op, byte* data, isize len);
+
+
 // Implementation //////////////////////////////////////////////////////////////
 #ifdef LIBC2_IMPLEMENTATION
+
+static inline
+isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){
+	Bytes_Buffer* bb = (Bytes_Buffer*)(impl);
+	switch(op){
+	case IO_Op_Query: {
+		return IO_Op_Read | IO_Op_Write;
+	} break;
+
+	case IO_Op_Read: {
+		return buffer_read(bb, data, len);
+	} break;
+
+	case IO_Op_Write: {
+		return buffer_write(bb, data, len);
+	} break;
+	}
+
+	return 0;
+}
 
 bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap){
 	bb->allocator = allocator;
@@ -85,7 +111,7 @@ isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
 	return n;
 }
 
-bool buffer_write(Bytes_Buffer* bb, byte const * bytes, isize len){
+bool buffer_write(Bytes_Buffer* bb, byte const* bytes, isize len){
 	if(bb->len + bb->last_read + len > bb->cap){
 		bool status = buffer_resize(bb, bb->cap * 2);
 		if(!status){ return false; }
@@ -110,6 +136,14 @@ bool buffer_resize(Bytes_Buffer* bb, isize new_size){
 void buffer_reset(Bytes_Buffer* bb){
 	bb->len = 0;
 	mem_set(bb->data, 0, bb->cap);
+}
+
+IO_Stream buffer_stream(Bytes_Buffer* bb){
+	IO_Stream s = {
+		.impl = bb,
+		.func = buffer_io_func,
+	};
+	return s;
 }
 
 #endif
