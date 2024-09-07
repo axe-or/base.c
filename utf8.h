@@ -3,16 +3,12 @@
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 
-// #define UTF8_ERROR ((i32)0xfffd)
-
-
 #define UTF8_RANGE1 ((i32)0x7f)
 #define UTF8_RANGE2 ((i32)0x7ff)
 #define UTF8_RANGE3 ((i32)0xffff)
 #define UTF8_RANGE4 ((i32)0x10ffff)
 
 typedef i32 Codepoint;
-
 
 typedef struct {
 	byte bytes[4];
@@ -41,6 +37,16 @@ UTF8_Encode_Result utf8_encode(Codepoint c);
 
 // Decode a codepoint from a UTF8 buffer of bytes
 UTF8_Decode_Result utf8_decode(byte const* data, isize len);
+
+typedef struct {
+	byte const* data;
+	isize data_length;
+	isize current;
+} UTF8_Iterator;
+
+// Steps iterator forward and puts Codepoint and Length advanced into pointers,
+// returns false when finished.
+bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len);
 
 // Implementation //////////////////////////////////////////////////////////////
 #ifdef LIBC2_IMPLEMENTATION
@@ -147,6 +153,12 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 	}
 
 	return res;
+}
+
+// Steps iterator forward and puts Codepoint and Length advanced into pointers,
+// returns false when finished.
+bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
+	return 0;
 }
 
 #undef SURROGATE2
