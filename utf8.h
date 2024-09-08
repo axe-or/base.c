@@ -158,6 +158,8 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 // Steps iterator forward and puts Codepoint and Length advanced into pointers,
 // returns false when finished.
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
+	if(iter->current >= iter->data_length){
+	}
 	return 0;
 }
 
