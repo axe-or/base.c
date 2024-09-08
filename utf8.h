@@ -158,9 +158,17 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 // Steps iterator forward and puts Codepoint and Length advanced into pointers,
 // returns false when finished.
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
-	if(iter->current >= iter->data_length){
+	if(iter->current >= iter->data_length){ return 0; }
+
+	UTF8_Decode_Result res = utf8_decode(&iter->data[iter->current], iter->data_length);
+	if(res.codepoint == DECODE_ERROR.codepoint){
+		*len = res.len + 1;
 	}
-	return 0;
+	*r = res.codepoint;
+
+	iter->current += res.len;
+
+	return 1;
 }
 
 #undef SURROGATE2
