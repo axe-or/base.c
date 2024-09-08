@@ -35,7 +35,7 @@ with open(OUT_SRC, 'w') as f:
 
 ROOT = 'libc2'
 
-with zf.ZipFile(OUT_ARCHIVE, 'w', compression=zf.ZIP_LZMA, compresslevel=9) as zfile:
+with zf.ZipFile(OUT_ARCHIVE, 'w', compresslevel=9) as zfile:
     zfile.mkdir(ROOT)
     for f in files:
         zfile.write(f, f'{ROOT}/{f}')
