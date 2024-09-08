@@ -50,7 +50,7 @@ IO_Reader io_to_reader(IO_Stream s);
 IO_Writer io_to_writer(IO_Stream s);
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 #include "assert.h"
 
 i8 io_query_stream(IO_Stream s){

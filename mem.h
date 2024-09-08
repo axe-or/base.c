@@ -82,7 +82,7 @@ void mem_free(Mem_Allocator allocator, void* p);
 void mem_free_all(Mem_Allocator allocator);
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities){
 	if(capabilities == NULL){ return 0; }

@@ -15,7 +15,7 @@ void arena_destroy(Mem_Arena *a);
 Mem_Allocator arena_allocator(Mem_Arena* a);
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 
 #include "mem.h"
 #include "assert.h"

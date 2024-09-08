@@ -49,7 +49,7 @@ IO_Stream buffer_stream(Bytes_Buffer* bb);
 
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 
 static inline
 isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){

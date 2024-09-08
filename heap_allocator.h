@@ -6,7 +6,7 @@
 Mem_Allocator heap_allocator();
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 
 #include <stdlib.h>
 

@@ -1,4 +1,4 @@
-#define LIBC2_IMPLEMENTATION 1
+#define BASE_C_IMPLEMENTATION 1
 #include "tests/bytes_buffer_test.c"
 #include "tests/utf8_test.c"
 #include "tests/arena_test.c"

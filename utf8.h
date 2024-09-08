@@ -49,7 +49,7 @@ typedef struct {
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len);
 
 // Implementation //////////////////////////////////////////////////////////////
-#ifdef LIBC2_IMPLEMENTATION
+#ifdef BASE_C_IMPLEMENTATION
 
 #define SURROGATE1 ((i32)0xd800)
 #define SURROGATE2 ((i32)0xdfff)

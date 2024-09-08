@@ -17,8 +17,8 @@ files = [
     'utf8.h',
 ]
 
-OUT_ARCHIVE = 'libc2.zip'
-OUT_SRC = 'libc2.c'
+OUT_ARCHIVE = 'base.zip'
+OUT_SRC = 'base.c'
 
 VERSION_FILE = 'version.txt'
 revision = sb.check_output(["git", "rev-parse", "--short=16", "HEAD"]).decode('utf-8')
@@ -27,7 +27,7 @@ with open(VERSION_FILE, 'w') as f:
 
 with open(OUT_SRC, 'w') as f:
     source =  ["/* Convenience file to have a translation unit that implements all of libc2's utilities. */"]
-    source += ['#define LIBC2_IMPLEMENTATION 1']
+    source += ['#define BASE_C_IMPLEMENTATION 1']
     source += [f'#include "{name}"' for name in files]
     source += ['#undef LIBC2_IMPLEMENTATION']
     n = f.write('\n'.join(source) + '\n')
