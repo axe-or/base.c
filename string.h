@@ -2,7 +2,7 @@
 
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
-#include "mem.h"
+#include "memory.h"
 
 // Helper to use with printf "%.*s"
 #define FMT_STRING(str_) (int)((str_).len), (str_).data

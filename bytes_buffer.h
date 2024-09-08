@@ -3,7 +3,7 @@
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 #include "io.h"
-#include "mem.h"
+#include "memory.h"
 
 typedef struct {
 	byte* data;
@@ -44,9 +44,6 @@ bool buffer_write(Bytes_Buffer* bb, byte const* b, isize len);
 byte* buffer_bytes(Bytes_Buffer* bb);
 
 IO_Stream buffer_stream(Bytes_Buffer* bb);
-
-// typedef isize (*IO_Func)(void* impl, IO_Operation op, byte* data, isize len);
-
 
 // Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION

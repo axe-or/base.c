@@ -1,7 +1,7 @@
 #pragma once
 
 #include "prelude.h"
-#include "mem.h"
+#include "memory.h"
 
 // Interface ///////////////////////////////////////////////////////////////////
 typedef struct {
@@ -17,7 +17,6 @@ Mem_Allocator arena_allocator(Mem_Arena* a);
 // Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
-#include "mem.h"
 #include "assert.h"
 static
 uintptr arena_required_mem(uintptr cur, isize nbytes, isize align){
