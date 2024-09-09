@@ -1,6 +1,8 @@
 /* Essential definitions. */
 #pragma once
 
+#define BASE_C_VERSION "{{BaseCVersion}}"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdalign.h>
