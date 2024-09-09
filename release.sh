@@ -34,8 +34,7 @@ CreateSourceArchive(){
 		cp "$file" "./base/$file"
 	done
 	cp "LICENSE" "./base"
-	GenerateBaseFile > "./base.c"
-	cp "base.c" "./base"
+	GenerateBaseFile > "./base/base.c"
 	sed "s/{{BaseCVersion}}/$version/g" "./base/prelude.h" -i
 
 	zip -q -r -9 "$outFile" "./base"
@@ -43,6 +42,6 @@ CreateSourceArchive(){
 	rm -rf "./base"
 }
 
-echo 'Creating base.zip'
 CreateSourceArchive
+echo "Created $outFile"
 
