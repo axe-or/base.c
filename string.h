@@ -107,7 +107,6 @@ String str_clone(String s, Mem_Allocator allocator){
 	};
 }
 
-#include <stdio.h>
 bool str_eq(String a, String b){
 	if(a.len != b.len){ return false; }
 
