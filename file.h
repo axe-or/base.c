@@ -67,7 +67,7 @@ Bytes file_read_all(String path, Mem_Allocator allocator){
 	if(data == NULL){ goto error_exit; }
 	data[size] = 0;
 
-	fread(data, 1, size, f);
+	size = fread(data, 1, size, f);
 	fclose(f);
 	return (Bytes){ .data = data, .len = size };
 

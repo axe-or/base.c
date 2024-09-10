@@ -3,7 +3,7 @@
 // Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 
-typedef enum : i8 {
+typedef enum {
 	IO_Op_Query = 0,
 	IO_Op_Read  = 1 << 0,
 	IO_Op_Write = 1 << 1,

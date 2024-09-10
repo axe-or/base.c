@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdalign.h>
 #include <stdbool.h>
+#include <stdnoreturn.h>
 
 typedef int8_t  i8;
 typedef int16_t i16;

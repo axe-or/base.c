@@ -24,14 +24,14 @@ void panic_assert(bool pred, cstring msg){
 	}
 }
 
-[[noreturn]]
+noreturn
 static inline
 void panic(char* const msg){
 	fprintf(stderr, "Panic: %s\n", msg);
 	abort();
 }
 
-[[noreturn]]
+noreturn
 static inline
 void unimplemented(){
 	fprintf(stderr, "Unimplemented\n");
