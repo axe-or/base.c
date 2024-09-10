@@ -5,10 +5,12 @@ cflags='-O2 -Wall -Wextra -fPIC -I.'
 errflags='-Werror=vla'
 ldflags=''
 
+set -eu
+
 Run(){ echo "$@"; $@; }
 
-Obj(){ echo "$1" | sed 's/\.c$/.o/'; }
+Run $cc $errflags $cflags main.c $ldflags -o base.bin
 
-Run $cc $errflags $cflags main.c $ldflags -o test.bin
+Run ./base.bin
 
-./test.bin
+

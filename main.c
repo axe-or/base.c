@@ -6,4 +6,5 @@
 #include <stdio.h>
 
 int main(){
+	heap_allocator();
 }
