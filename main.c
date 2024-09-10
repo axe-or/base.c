@@ -1,14 +1,12 @@
 #define BASE_C_IMPLEMENTATION 1
+#include "memory.h"
 #include "io.h"
-// #include "tests/bytes_buffer_test.c"
-// #include "tests/utf8_test.c"
-// #include "tests/arena_test.c"
-// #include "tests/string_test.c"
+#include "file.h"
+#include "heap_allocator.h"
+#include <stdio.h>
 
 int main(){
-	IO_Stream s;
-	// Run all tests
-	// test_bytes_buffer();
-	// test_utf8();
-	// test_arena();
+	Bytes buf = read_whole_file(str_from("main.c"), heap_allocator());
+	printf("%.*s\n", FMT_STRING(buf));
+	mem_free(heap_allocator(), buf.data);
 }

@@ -6,6 +6,11 @@
 
 #define New(T_, N_, Al_) mem_alloc((Al_), sizeof(T_) * (N_), alignof(T_))
 
+typedef struct {
+	byte* data;
+	isize len;
+} Bytes;
+
 enum Allocator_Op {
 	Mem_Op_Alloc    = 1,
 	Mem_Op_Resize   = 2,
