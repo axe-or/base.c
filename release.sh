@@ -13,7 +13,6 @@ files='
     memory.h
     prelude.h
     string.h
-    testing.h
     utf8.h
 '
 
