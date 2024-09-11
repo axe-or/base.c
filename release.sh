@@ -45,3 +45,6 @@ CreateSourceArchive(){
 CreateSourceArchive
 echo "Created $outFile"
 
+# For pre-commit hook
+git add "$outFile" || exit 0
+
