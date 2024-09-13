@@ -1,10 +1,11 @@
 import re
 
+# The order here is very crucial, includes must be in a DAG
 deps = [
     'prelude.h',
     'assert.h', 'utf8.h',
     'memory.h', 'io.h',
-    'string.h', 'arena_allocator.h', 'heap_allocator.h', 'bytes_buffer.h', 'file.h',
+    'string.h', 'bytes_buffer.h', 'arena_allocator.h', 'heap_allocator.h',  'file.h',
 ]
 
 src_out = []
@@ -22,10 +23,7 @@ for dep in deps:
     out_lines = []
     for line in lines:
         normalized = normalize_whitespace(line)
-        if (not normalized.startswith('#include "') and
-            not normalized.startswith('#pragma once') and
-            not normalized.startswith('///')):
-
+        if not normalized.startswith('#include "') and not normalized.startswith('#pragma once'):
             out_lines.append(line.rstrip())
 
     src_out.append('\n'.join(out_lines))
