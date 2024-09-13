@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "{{BaseCVersion}}"
+#define BASE_C_VERSION "193a980280c9c45fdd2aed2bb8ecd684938eb1d4"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -110,8 +110,10 @@ bool utf8_continuation_byte(byte b){
 	return (b & 0xc0) == 0x80;
 }
 
+// Encode a unicode Codepoint
 UTF8_Encode_Result utf8_encode(Codepoint c);
 
+// Decode a codepoint from a UTF8 buffer of bytes
 UTF8_Decode_Result utf8_decode(byte const* data, isize len);
 
 typedef struct {
@@ -120,6 +122,8 @@ typedef struct {
 	isize current;
 } UTF8_Iterator;
 
+// Steps iterator forward and puts Codepoint and Length advanced into pointers,
+// returns false when finished.
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len);
 
 #ifdef BASE_C_IMPLEMENTATION
@@ -211,6 +215,7 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 		return DECODE_ERROR;
 	}
 
+	// Validation
 	if(res.codepoint >= SURROGATE1 && res.codepoint <= SURROGATE2){
 		return DECODE_ERROR;
 	}
@@ -227,6 +232,8 @@ UTF8_Decode_Result utf8_decode(byte const* buf, isize len){
 	return res;
 }
 
+// Steps iterator forward and puts Codepoint and Length advanced into pointers,
+// returns false when finished.
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
 	if(iter->current >= iter->data_length){ return 0; }
 
@@ -308,6 +315,7 @@ int mem_valid_alignment(isize align){
 	return (align & (align - 1)) == 0 && (align != 0);
 }
 
+// Align p to alignment a, this only works if a is a non-zero power of 2
 static inline
 uintptr align_forward_ptr(uintptr p, uintptr a){
 	debug_assert(mem_valid_alignment(a), "Invalid memory alignment");
@@ -318,16 +326,23 @@ uintptr align_forward_ptr(uintptr p, uintptr a){
 	return p;
 }
 
+// Get capabilities of allocator as a number, you can use bit operators to check it.
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities);
 
+// Allocate fresh memory, filled with 0s. Returns NULL on failure.
 void* mem_alloc(Mem_Allocator allocator, isize size, isize align);
 
+// Re-allocate memory in-place without changing the original pointer. Returns NULL on failure.
 void* mem_resize(Mem_Allocator allocator, void* ptr, isize new_size);
 
+// Free pointer to memory, includes alignment information, which is required for
+// some allocators, freeing NULL is a no-op
 void mem_free_ex(Mem_Allocator allocator, void* p, isize align);
 
+// Free pointer to memory, freeing NULL is a no-op
 void mem_free(Mem_Allocator allocator, void* p);
 
+// Free all pointers owned by allocator
 void mem_free_all(Mem_Allocator allocator);
 
 #ifdef BASE_C_IMPLEMENTATION
@@ -392,14 +407,23 @@ typedef enum {
 	IO_Err_Unknown = -127,
 } IO_Error;
 
+// Read into buffer, returns number of bytes read into buffer. On error returns
+// the negative valued IO_Error code.
 isize io_read(IO_Reader r, byte* buf, isize buflen);
 
+// Write into buffer, returns number of bytes written to buffer. On error returns
+// the negative valued IO_Error code.
 isize io_write(IO_Writer r, byte const* buf, isize buflen);
 
+// Query the capabilites of the IO stream as per IO_Operation
 i8 io_query_stream(IO_Stream s);
 
+// Cast a stream to a IO reader, in debug mode this uses a query to assert that
+// the stream supports reading
 IO_Reader io_to_reader(IO_Stream s);
 
+// Cast a stream to a IO writer, in debug mode this uses a query to assert that
+// the stream supports writing
 IO_Writer io_to_writer(IO_Stream s);
 
 #ifdef BASE_C_IMPLEMENTATION
@@ -434,6 +458,7 @@ IO_Writer io_to_writer(IO_Stream s){
 
 #endif
 
+// Helper to use with printf "%.*s"
 #define FMT_STRING(str_) (int)((str_).len), (str_).data
 
 typedef struct {
@@ -451,20 +476,28 @@ isize cstring_len(cstring cstr){
 	return size;
 }
 
+// Create substring from a cstring
 String str_from(cstring data);
 
+// Create substring from a piece of a cstring
 String str_from_range(cstring data, isize start, isize length);
 
+// Create substring from a raw slice of bytes
 String str_from_bytes(byte const* data, isize length);
 
+// Get a sub string, starting at `start` with `length`
 String str_sub(String s, isize start, isize length);
 
+// Clone a string
 String str_clone(String s, Mem_Allocator allocator);
 
+// Destroy a string
 void str_destroy(String s, Mem_Allocator allocator);
 
+// Concatenate 2 strings
 String str_concat(String a, String b, Mem_Allocator allocator);
 
+// Check if 2 strings are equal
 bool str_eq(String a, String b);
 
 #ifdef BASE_C_IMPLEMENTATION
@@ -539,6 +572,145 @@ bool str_eq(String a, String b){
 
 void str_destroy(String s, Mem_Allocator allocator){
 	mem_free(allocator, (void*)s.data);
+}
+
+#endif
+
+typedef struct {
+	byte* data;
+	isize cap;       // Total capacity
+	isize last_read; // Offset of last read position
+	isize len;       // Number of bytes after last_read
+	Mem_Allocator allocator;
+} Bytes_Buffer;
+
+// Init a builder with a capacity, returns success status
+bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap);
+
+// Get remaining free size given the current capacity
+static inline
+isize buffer_remaining(Bytes_Buffer* bb){
+	return bb->cap - (bb->last_read + bb->len);
+}
+
+// Destroy a builder
+void buffer_destroy(Bytes_Buffer* bb);
+
+// Resize builder to have specified capacity, returns success status.
+bool buffer_resize(Bytes_Buffer* bb, isize new_size);
+
+// Resets builder's data, does not de-allocate
+void buffer_reset(Bytes_Buffer* bb);
+
+// Clear buffer's read bytes, this shifts the buffer's memory back to its base.
+void buffer_clean_read_bytes(Bytes_Buffer* bb);
+
+// Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
+isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size);
+
+// Push bytes to the end of builder, returns success status
+bool buffer_write(Bytes_Buffer* bb, byte const* b, isize len);
+
+// Current unread bytes, this pointer becomes invalid as soon as the buffer is modified.
+byte* buffer_bytes(Bytes_Buffer* bb);
+
+IO_Stream buffer_stream(Bytes_Buffer* bb);
+
+#ifdef BASE_C_IMPLEMENTATION
+
+static inline
+isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){
+	Bytes_Buffer* bb = (Bytes_Buffer*)(impl);
+	switch(op){
+	case IO_Op_Query: {
+		return IO_Op_Read | IO_Op_Write;
+	} break;
+
+	case IO_Op_Read: {
+		return buffer_read(bb, data, len);
+	} break;
+
+	case IO_Op_Write: {
+		return buffer_write(bb, data, len);
+	} break;
+	}
+
+	return 0;
+}
+
+bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap){
+	bb->allocator = allocator;
+	bb->data = New(byte, initial_cap, allocator);
+
+	if(bb->data != NULL){
+		bb->cap = initial_cap;
+		bb->len = 0;
+		bb->last_read = 0;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void buffer_destroy(Bytes_Buffer* bb){
+	mem_free(bb->allocator, bb->data);
+	bb->data = 0;
+}
+
+// Clear buffer's read bytes, this shifts the buffer's memory back to its base.
+void buffer_clean_read_bytes(Bytes_Buffer* bb){
+	byte* data = buffer_bytes(bb);
+	mem_copy(bb->data, data, bb->len);
+	bb->last_read = 0;
+}
+
+byte* buffer_bytes(Bytes_Buffer* bb){
+	return &bb->data[bb->last_read];
+}
+
+// Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
+isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
+	if(bb->len == 0){ return 0; }
+	isize n = Min(size, bb->len);
+	mem_copy(dest, &bb->data[bb->last_read], n);
+	bb->last_read += n;
+	bb->len -= n;
+	return n;
+}
+
+bool buffer_write(Bytes_Buffer* bb, byte const* bytes, isize len){
+	if(bb->len + bb->last_read + len > bb->cap){
+		bool status = buffer_resize(bb, bb->cap * 2);
+		if(!status){ return false; }
+	}
+	mem_copy(&bb->data[bb->last_read + bb->len], bytes, len);
+	bb->len += len;
+	return true;
+}
+
+bool buffer_resize(Bytes_Buffer* bb, isize new_size){
+	byte* new_data = New(byte, new_size, bb->allocator);
+	if(new_data == NULL){ return false; }
+
+	mem_copy(new_data, bb->data, Min(new_size, bb->len));
+	mem_free(bb->allocator, bb->data);
+	bb->data = new_data;
+	bb->cap = new_size;
+
+	return true;
+}
+
+void buffer_reset(Bytes_Buffer* bb){
+	bb->len = 0;
+	mem_set(bb->data, 0, bb->cap);
+}
+
+IO_Stream buffer_stream(Bytes_Buffer* bb){
+	IO_Stream s = {
+		.impl = bb,
+		.func = buffer_io_func,
+	};
+	return s;
 }
 
 #endif
@@ -644,7 +816,6 @@ void arena_destroy(Mem_Arena* a){
 Mem_Allocator heap_allocator();
 
 #ifdef BASE_C_IMPLEMENTATION
-
 #include <stdlib.h>
 
 static
@@ -699,138 +870,16 @@ Mem_Allocator heap_allocator(){
 }
 #endif
 
-typedef struct {
-	byte* data;
-	isize cap;       // Total capacity
-	isize last_read; // Offset of last read position
-	isize len;       // Number of bytes after last_read
-	Mem_Allocator allocator;
-} Bytes_Buffer;
-
-bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap);
-
-static inline
-isize buffer_remaining(Bytes_Buffer* bb){
-	return bb->cap - (bb->last_read + bb->len);
-}
-
-void buffer_destroy(Bytes_Buffer* bb);
-
-bool buffer_resize(Bytes_Buffer* bb, isize new_size);
-
-void buffer_reset(Bytes_Buffer* bb);
-
-void buffer_clean_read_bytes(Bytes_Buffer* bb);
-
-isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size);
-
-bool buffer_write(Bytes_Buffer* bb, byte const* b, isize len);
-
-byte* buffer_bytes(Bytes_Buffer* bb);
-
-IO_Stream buffer_stream(Bytes_Buffer* bb);
-
-#ifdef BASE_C_IMPLEMENTATION
-
-static inline
-isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){
-	Bytes_Buffer* bb = (Bytes_Buffer*)(impl);
-	switch(op){
-	case IO_Op_Query: {
-		return IO_Op_Read | IO_Op_Write;
-	} break;
-
-	case IO_Op_Read: {
-		return buffer_read(bb, data, len);
-	} break;
-
-	case IO_Op_Write: {
-		return buffer_write(bb, data, len);
-	} break;
-	}
-
-	return 0;
-}
-
-bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap){
-	bb->allocator = allocator;
-	bb->data = New(byte, initial_cap, allocator);
-
-	if(bb->data != NULL){
-		bb->cap = initial_cap;
-		bb->len = 0;
-		bb->last_read = 0;
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void buffer_destroy(Bytes_Buffer* bb){
-	mem_free(bb->allocator, bb->data);
-	bb->data = 0;
-}
-
-void buffer_clean_read_bytes(Bytes_Buffer* bb){
-	byte* data = buffer_bytes(bb);
-	mem_copy(bb->data, data, bb->len);
-	bb->last_read = 0;
-}
-
-byte* buffer_bytes(Bytes_Buffer* bb){
-	return &bb->data[bb->last_read];
-}
-
-isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
-	if(bb->len == 0){ return 0; }
-	isize n = Min(size, bb->len);
-	mem_copy(dest, &bb->data[bb->last_read], n);
-	bb->last_read += n;
-	bb->len -= n;
-	return n;
-}
-
-bool buffer_write(Bytes_Buffer* bb, byte const* bytes, isize len){
-	if(bb->len + bb->last_read + len > bb->cap){
-		bool status = buffer_resize(bb, bb->cap * 2);
-		if(!status){ return false; }
-	}
-	mem_copy(&bb->data[bb->last_read + bb->len], bytes, len);
-	bb->len += len;
-	return true;
-}
-
-bool buffer_resize(Bytes_Buffer* bb, isize new_size){
-	byte* new_data = New(byte, new_size, bb->allocator);
-	if(new_data == NULL){ return false; }
-
-	mem_copy(new_data, bb->data, Min(new_size, bb->len));
-	mem_free(bb->allocator, bb->data);
-	bb->data = new_data;
-	bb->cap = new_size;
-
-	return true;
-}
-
-void buffer_reset(Bytes_Buffer* bb){
-	bb->len = 0;
-	mem_set(bb->data, 0, bb->cap);
-}
-
-IO_Stream buffer_stream(Bytes_Buffer* bb){
-	IO_Stream s = {
-		.impl = bb,
-		.func = buffer_io_func,
-	};
-	return s;
-}
-
-#endif
-
+// Reads whole file into memory, it allocates one extra byte implicitly, to
+// allow for better interop with cstrings.
 Bytes file_read_all(String path, Mem_Allocator allocator);
 
+// Write n bytes of data to file at path. Returns number of bytes written
+// (negative means error).
 isize file_write(String path, byte const* data, isize n);
 
+// Append n bytes of data to file at path. Returns number of bytes added
+// (negative means error).
 isize file_append(String path, byte const* data, isize n);
 
 #ifdef BASE_C_IMPLEMENTATION

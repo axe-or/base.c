@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+
 import re
+import subprocess as sb
+from zipfile import ZipFile
+from math import ceil
 
 # The order here is very crucial, includes must be in a DAG
 deps = [
@@ -32,6 +37,10 @@ src_out.insert(0, '#pragma once')
 
 src_out = '\n'.join(src_out).replace('\n\n\n', '\n\n')
 
+git_version = sb.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+src_out = src_out.replace('{{BaseCVersion}}', git_version)
+
 with open('base.h', 'w') as f:
-    f.write(src_out)
+    n = f.write(src_out)
+    print(f'Wrote {ceil(n / 1024)}KiB to base.h ({git_version})')
 
