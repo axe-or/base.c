@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 #include "io.h"
 #include "memory.h"
@@ -45,7 +44,6 @@ byte* buffer_bytes(Bytes_Buffer* bb);
 
 IO_Stream buffer_stream(Bytes_Buffer* bb);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 static inline

@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 #include "memory.h"
 
@@ -46,7 +45,6 @@ String str_concat(String a, String b, Mem_Allocator allocator);
 // Check if 2 strings are equal
 bool str_eq(String a, String b);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 static const String EMPTY = {0};

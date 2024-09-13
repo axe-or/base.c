@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 
 typedef enum {
@@ -49,7 +48,6 @@ IO_Reader io_to_reader(IO_Stream s);
 // the stream supports writing
 IO_Writer io_to_writer(IO_Stream s);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 #include "assert.h"
 

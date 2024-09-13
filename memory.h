@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 #include "assert.h"
 
@@ -86,7 +85,6 @@ void mem_free(Mem_Allocator allocator, void* p);
 // Free all pointers owned by allocator
 void mem_free_all(Mem_Allocator allocator);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities){

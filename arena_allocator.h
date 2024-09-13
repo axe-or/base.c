@@ -3,7 +3,6 @@
 #include "prelude.h"
 #include "memory.h"
 
-// Interface ///////////////////////////////////////////////////////////////////
 typedef struct {
 	isize offset;
 	isize capacity;
@@ -14,7 +13,6 @@ void arena_init(Mem_Arena* a, byte* data, isize len);
 void arena_destroy(Mem_Arena *a);
 Mem_Allocator arena_allocator(Mem_Arena* a);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 #include "assert.h"

@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 
 #define UTF8_RANGE1 ((i32)0x7f)
@@ -48,7 +47,6 @@ typedef struct {
 // returns false when finished.
 bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 #define SURROGATE1 ((i32)0xd800)

@@ -1,6 +1,5 @@
 #pragma once
 
-// Interface ///////////////////////////////////////////////////////////////////
 #include "prelude.h"
 #include "memory.h"
 #include "string.h"
@@ -17,7 +16,6 @@ isize file_write(String path, byte const* data, isize n);
 // (negative means error).
 isize file_append(String path, byte const* data, isize n);
 
-// Implementation //////////////////////////////////////////////////////////////
 #ifdef BASE_C_IMPLEMENTATION
 
 #include <stdio.h>
