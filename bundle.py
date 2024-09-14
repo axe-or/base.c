@@ -45,3 +45,4 @@ with open('base.h', 'w') as f:
     n = f.write(src_out)
     print(f'Wrote {ceil(n / 1024)}KiB to base.h ({git_version})')
 
+sb.call(["git", "add", "base.h"])
