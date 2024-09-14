@@ -159,10 +159,12 @@ bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
 	if(iter->current >= iter->data_length){ return 0; }
 
 	UTF8_Decode_Result res = utf8_decode(&iter->data[iter->current], iter->data_length);
+	*r = res.codepoint;
+	*len = res.len;
+
 	if(res.codepoint == DECODE_ERROR.codepoint){
 		*len = res.len + 1;
 	}
-	*r = res.codepoint;
 
 	iter->current += res.len;
 

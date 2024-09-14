@@ -2,6 +2,7 @@
 
 #include "prelude.h"
 #include "memory.h"
+#include "utf8.h"
 
 // Helper to use with printf "%.*s"
 #define FmtString(str_) (int)((str_).len), (str_).data
@@ -45,6 +46,18 @@ String str_concat(String a, String b, Mem_Allocator allocator);
 // Check if 2 strings are equal
 bool str_eq(String a, String b);
 
+// Strip leading and trailing codepoints that belong to the cutset
+String str_strip(String s, String cutset);
+
+// Strip leading codepoints that belong to the cutset
+String str_strip_leading(String s, String cutset);
+
+// Strip trailing codepoints that belong to the cutset
+String str_strip_trailing(String s, String cutset);
+
+// Get an utf8 iterator form string
+UTF8_Iterator str_iterator(String s);
+
 #ifdef BASE_C_IMPLEMENTATION
 
 static const String EMPTY = {0};
@@ -85,6 +98,7 @@ String str_from_range(cstring data, isize start, isize length){
 	return s;
 }
 
+// TODO: Handle length in codepoint count
 String str_sub(String s, isize start, isize length){
 	if(start >= s.len || start < 0 || start + length > s.len){ return EMPTY; }
 
@@ -115,8 +129,72 @@ bool str_eq(String a, String b){
 	return true;
 }
 
+UTF8_Iterator str_iterator(String s){
+	return (UTF8_Iterator){
+		.current = 0,
+		.data_length = s.len,
+		.data = s.data,
+	};
+}
+
 void str_destroy(String s, Mem_Allocator allocator){
 	mem_free(allocator, (void*)s.data);
+}
+
+String str_strip(String s, String cutset){
+	unimplemented();
+}
+
+#define MAX_CUTSET_LEN 64
+
+String str_strip_leading(String s, String cutset){
+	debug_assert(cutset.len <= MAX_CUTSET_LEN, "Cutset string exceeds MAX_CUTSET_LEN");
+
+	Codepoint set[MAX_CUTSET_LEN] = {0};
+	isize set_len = 0;
+	isize cut_until = 0;
+
+	decode_cutset: {
+		Codepoint c; i8 n;
+		UTF8_Iterator iter = str_iterator(cutset);
+
+		isize i = 0;
+		while(utf8_iter_next(&iter, &c, &n) && i < MAX_CUTSET_LEN){
+			set[i] = c;
+			i += 1;
+		}
+		set_len = i;
+	}
+	printf("SET LENGTH: %ld\n", set_len);
+
+	strip_cutset: {
+		Codepoint c; i8 n;
+		UTF8_Iterator iter = str_iterator(s);
+
+		while(utf8_iter_next(&iter, &c, &n)){
+			bool to_be_cut = false;
+			for(isize i = 0; i < set_len; i += 1){
+				if(set[i] == c){
+					to_be_cut = true;
+					break;
+				}
+			}
+
+			if(to_be_cut){
+				cut_until += n;
+			}
+			else {
+				break; // Reached first Codepoint that isn't in cutset
+			}
+
+		}
+	}
+
+	return str_sub(s, cut_until, s.len - cut_until);
+}
+
+String str_strip_trailing(String s, String cutset){
+	unimplemented();
 }
 
 #endif
