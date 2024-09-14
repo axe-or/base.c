@@ -36,7 +36,7 @@ for dep in deps:
 
 src_out.insert(0, '#pragma once')
 
-src_out = '\n'.join(src_out).replace('\n\n\n', '\n\n')
+src_out = '\n'.join(src_out).replace('\n\n\n', '\n\n') + '\n'
 
 git_version = sb.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 src_out = src_out.replace('{{BaseCVersion}}', git_version)
