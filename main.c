@@ -34,13 +34,13 @@ int main(){
 	list_add(&people_list.head, &people[3].list);
 	list_add(&people_list.head, &people[4].list);
 
-	for(List_Node* node = people_list.head.next; node != &people_list.head; node = node->next){
+	list_foreach(node, people_list.head){
 		struct Person* p = list_entry(node, struct Person, list);
 		printf("%s %d\n", p->name, p->age);
 	}
 
 	printf("REVERSED\n");
-	for(List_Node* node = &people[0].list; node != &people_list.head; node = node->prev){
+	list_foreach_reversed(node, people_list.head){
 		struct Person* p = list_entry(node, struct Person, list);
 		printf("%s %d\n", p->name, p->age);
 	}

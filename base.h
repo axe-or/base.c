@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "94cdb756b88e5c86fe89bcec4b4bccb288d3c22b"
+#define BASE_C_VERSION "4c502abc689a828f27d2b7a0639ab1ce5935be43"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -291,6 +291,12 @@ void list_init(List_Node* target){
 
 // Get pointer of structure containing the list
 #define list_entry(Ptr, Type, Member) ContainerOf(Ptr, Type, Member)
+
+#define list_foreach(IterVar, ListHead) \
+	for(List_Node* IterVar = ListHead.next; IterVar != &ListHead; IterVar = IterVar->next)
+
+#define list_foreach_reversed(IterVar, ListHead) \
+	for(List_Node* IterVar = ListHead.prev; IterVar != &ListHead; IterVar = IterVar->prev)
 
 #ifdef BASE_C_IMPLEMENTATION
 
