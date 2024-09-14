@@ -39,6 +39,9 @@ _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 #define Max(a, b) ((a) > (b) ? (a) : (b))
 #define Clamp(lo, x, hi) Min(Max(lo, x), hi)
 
+#define ContainerOf(Ptr, Type, Member) \
+	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))
+
 #ifndef __cplusplus
 #undef bool
 typedef _Bool bool;

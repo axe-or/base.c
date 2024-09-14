@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "5ac5cfdf770e4bf492841e5624c323ef402214e6"
+#define BASE_C_VERSION "a493b0492363e706597b98f187e7670c8cd1f343"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -38,6 +38,9 @@ _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 #define Min(a, b) ((a) < (b) ? (a) : (b))
 #define Max(a, b) ((a) > (b) ? (a) : (b))
 #define Clamp(lo, x, hi) Min(Max(lo, x), hi)
+
+#define ContainerOf(Ptr, Type, Member) \
+	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))
 
 #ifndef __cplusplus
 #undef bool
@@ -262,6 +265,59 @@ bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
 #undef CONTINUATION2
 
 #endif
+/* Intrusive circular doubly linked list. This is similar to the `list_head`
+ * construct used in the Linux kernel, although very slimmed down for the sake
+ * of simplicity. */
+
+typedef struct List_Node List_Node;
+
+struct List_Node {
+	List_Node* next;
+	List_Node* prev;
+};
+
+// Add list value after target
+void list_add(List_Node* target, List_Node* new_node);
+
+// Delete value from list by redirecting its neighbors
+void list_add(List_Node* target, List_Node* new_node);
+
+// Initialize node to be head of list
+static inline
+void list_init(List_Node* target){
+	target->next = target;
+	target->prev = target;
+}
+
+// Get pointer of structure containing the list
+#define list_entry(Ptr, Type, Member) ContainerOf(Ptr, Type, Member)
+
+#ifdef BASE_C_IMPLEMENTATION
+
+// Insert new_node between 2 existing nodes
+static void _list_add(List_Node* prev, List_Node* next, List_Node* new_node){
+	new_node->next = next;
+	new_node->prev = prev;
+	if(next != NULL){ next->prev = new_node; }
+	if(prev != NULL){ prev->next = new_node; }
+}
+
+static void _list_del(List_Node* node){
+	List_Node* prev = node->prev;
+	List_Node* next = node->next;
+	if(next != NULL){ next->prev = prev; }
+	if(prev != NULL){ next->prev = next; }
+}
+
+void list_add(List_Node* target, List_Node* new_node){
+	_list_add(target, target->next, new_node);
+}
+
+void list_del(List_Node* node){
+	_list_del(node);
+}
+
+#endif
 
 #define New(T_, N_, Al_) mem_alloc((Al_), sizeof(T_) * (N_), alignof(T_))
 
@@ -459,7 +515,7 @@ IO_Writer io_to_writer(IO_Stream s){
 #endif
 
 // Helper to use with printf "%.*s"
-#define FMT_STRING(str_) (int)((str_).len), (str_).data
+#define FmtString(str_) (int)((str_).len), (str_).data
 
 typedef struct {
 	isize len;

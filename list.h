@@ -1,38 +1,56 @@
+/* Intrusive circular doubly linked list. This is similar to the `list_head`
+ * construct used in the Linux kernel, although very slimmed down for the sake
+ * of simplicity. */
 #pragma once
 
 #include "prelude.h"
 
-// Single linked list
+typedef struct List_Node List_Node;
 
-// Double linked list
-typedef struct DList_Part DList_Part;
-
-struct DList_Part {
-	DList_Part* prev;
-	DList_Part* next;
+struct List_Node {
+	List_Node* next;
+	List_Node* prev;
 };
 
-void dlist_insert_after(DList_Part* target, DList_Part* current){
-	if(target == NULL){ return; }
-	DList_Part* old = target->next;
-	target->next = current;
-	current->prev = target;
-	current->next = old;
-	if(current->next->next){
-		current->next->next = current;
-	}
+// Add list value after target
+void list_add(List_Node* target, List_Node* new_node);
+
+// Delete value from list by redirecting its neighbors
+void list_add(List_Node* target, List_Node* new_node);
+
+// Initialize node to be head of list
+static inline
+void list_init(List_Node* target){
+	target->next = target;
+	target->prev = target;
 }
 
-void dlist_insert_before(DList_Part* target, DList_Part* current){
-	if(target == NULL){ return; }
-	DList_Part* old = target->prev;
-	target->prev = current;
-	current->next = target;
-	current->prev = old;
-	if(current->prev->prev){
-		current->prev->prev = current;
-	}
-}
+// Get pointer of structure containing the list
+#define list_entry(Ptr, Type, Member) ContainerOf(Ptr, Type, Member)
 
 #ifdef BASE_C_IMPLEMENTATION
+
+// Insert new_node between 2 existing nodes
+static void _list_add(List_Node* prev, List_Node* next, List_Node* new_node){
+	new_node->next = next;
+	new_node->prev = prev;
+	if(next != NULL){ next->prev = new_node; }
+	if(prev != NULL){ prev->next = new_node; }
+}
+
+static void _list_del(List_Node* node){
+	List_Node* prev = node->prev;
+	List_Node* next = node->next;
+	if(next != NULL){ next->prev = prev; }
+	if(prev != NULL){ next->prev = next; }
+}
+
+void list_add(List_Node* target, List_Node* new_node){
+	_list_add(target, target->next, new_node);
+}
+
+void list_del(List_Node* node){
+	_list_del(node);
+}
+
 #endif

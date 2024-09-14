@@ -4,7 +4,7 @@
 #include "memory.h"
 
 // Helper to use with printf "%.*s"
-#define FMT_STRING(str_) (int)((str_).len), (str_).data
+#define FmtString(str_) (int)((str_).len), (str_).data
 
 typedef struct {
 	isize len;
