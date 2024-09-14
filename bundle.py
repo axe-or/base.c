@@ -32,6 +32,7 @@ for dep in deps:
             out_lines.append(line.rstrip())
 
     src_out.append('\n'.join(out_lines))
+    print(f'Added {dep}')
 
 src_out.insert(0, '#pragma once')
 
