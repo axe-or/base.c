@@ -171,6 +171,28 @@ bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
 	return 1;
 }
 
+static inline
+bool is_continuation_byte(Codepoint c){
+	return (c >= CONTINUATION1) && (c <= CONTINUATION2);
+}
+
+// Steps iterator backward and puts Codepoint and its length into pointers,
+// returns false when finished.
+bool utf8_iter_prev(UTF8_Iterator* iter, Codepoint* r, i8* len){
+	if(iter->current <= 0){ return false; }
+
+	iter->current -= 1;
+	while(is_continuation_byte(iter->data[iter->current])){
+		iter->current -= 1;
+	}
+
+	UTF8_Decode_Result res = utf8_decode(&iter->data[iter->current], iter->data_length - iter->current);
+	*r = res.codepoint;
+	*len = res.len;
+	return true;
+}
+
+
 #undef SURROGATE2
 #undef SURROGATE1
 #undef MASK2

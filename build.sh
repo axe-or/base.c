@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 cc='gcc -std=c11'
-cflags='-O2 -Wall -Wextra -fPIC -I. -g -fsanitize=address'
+cflags='-O2 -Wall -Wextra -fPIC -I. -fsanitize=address'
 errflags='-Werror=vla'
 ldflags=''
 

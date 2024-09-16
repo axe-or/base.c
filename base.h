@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "b4225de6538e57180f116d67f557db762d084041"
+#define BASE_C_VERSION "4d108e06d1bd1bba8d9214f66b482cc3d59d4a6c"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -251,6 +251,27 @@ bool utf8_iter_next(UTF8_Iterator* iter, Codepoint* r, i8* len){
 	iter->current += res.len;
 
 	return 1;
+}
+
+static inline
+bool is_continuation_byte(Codepoint c){
+	return (c >= CONTINUATION1) && (c <= CONTINUATION2);
+}
+
+// Steps iterator backward and puts Codepoint and its length into pointers,
+// returns false when finished.
+bool utf8_iter_prev(UTF8_Iterator* iter, Codepoint* r, i8* len){
+	if(iter->current <= 0){ return false; }
+
+	iter->current -= 1;
+	while(is_continuation_byte(iter->data[iter->current])){
+		iter->current -= 1;
+	}
+
+	UTF8_Decode_Result res = utf8_decode(&iter->data[iter->current], iter->data_length - iter->current);
+	*r = res.codepoint;
+	*len = res.len;
+	return true;
 }
 
 #undef SURROGATE2
