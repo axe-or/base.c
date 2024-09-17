@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
 cc='gcc -std=c11'
-cflags='-O2 -Wall -Wextra -fPIC -I. -fsanitize=address,undefined'
-errflags='-Werror=vla'
+cflags='-O2 -Wall -Wextra -fPIC -I.'
+errflags='-Wno-unused-label -Werror=vla'
 ldflags=''
 
 set -eu

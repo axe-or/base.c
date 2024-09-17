@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "9d14fbd847d32d0e691eb5662135ab9c23c2a5f6"
+#define BASE_C_VERSION "30fff74ff0d42c9e9aebe8534d1bbc8b004f82b4"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -573,6 +573,12 @@ String str_from_bytes(byte const* data, isize length);
 // Get a sub string, starting at `start` with `length`
 String str_sub(String s, isize start, isize length);
 
+// Get how many codeponits are in a string
+isize str_codepoint_count(String s);
+
+// Get the byte offset of the n-th codepoint
+isize str_codepoint_offset(String s, isize n);
+
 // Clone a string
 String str_clone(String s, Mem_Allocator allocator);
 
@@ -600,9 +606,16 @@ UTF8_Iterator str_iterator(String s);
 // Get an utf8 iterator from string, already at the end, to be used for reverse iteration
 UTF8_Iterator str_iterator_reversed(String s);
 
+// Is string empty?
+bool str_empty(String s);
+
 #ifdef BASE_C_IMPLEMENTATION
 
 static const String EMPTY = {0};
+
+bool str_empty(String s){
+	return s.len == 0 || s.data == NULL;
+}
 
 String str_from(cstring data){
 	String s = {
@@ -638,6 +651,31 @@ String str_from_range(cstring data, isize start, isize length){
 		.len = length,
 	};
 	return s;
+}
+
+isize str_codepoint_count(String s){
+	UTF8_Iterator it = str_iterator(s);
+
+	isize count = 0;
+	Codepoint c; i8 len;
+	while(utf8_iter_next(&it, &c, &len)){
+		count += 1;
+	}
+	return count;
+}
+
+isize str_codepoint_offset(String s, isize n){
+	UTF8_Iterator it = str_iterator(s);
+
+	isize acc = 0;
+
+	Codepoint c; i8 len;
+	do {
+		if(acc == n){ break; }
+		acc += 1;
+	} while(utf8_iter_next(&it, &c, &len));
+
+	return it.current;
 }
 
 // TODO: Handle length in codepoint count

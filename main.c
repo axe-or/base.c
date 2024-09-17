@@ -3,10 +3,13 @@
 #include <stdio.h>
 
 int main(){
-	String s = str_from("  И И\t한Hello.한\n \tИ");
-	String s2 = str_trim(s, str_from(" 한И\t\n\r"));
+	String s = str_from("H한ellИo");
 	printf("\"%.*s\"\n", FmtString(s));
-	printf("\"%.*s\"\n", FmtString(s2));
+
+	printf("Bytes: %ld Codepoints: %ld\n", s.len, str_codepoint_count(s));
+	for(isize n = 0; n < 7; n++){
+		printf("N: %ld, OFF: %ld\n", n, str_codepoint_offset(s, n));
+	}
 
 	return 0;
 }
