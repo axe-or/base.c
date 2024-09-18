@@ -1,8 +1,11 @@
 #pragma once
 
+#include "assert.h"
 #include "io.h"
 #include "memory.h"
 #include "prelude.h"
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 typedef enum {
     Net_IPv4,
@@ -42,13 +45,13 @@ typedef struct {
 // Handle to an OS socket
 typedef struct {
     i64 _handle;
-} Net_Socket;
+} Net_Raw_Socket;
 
 // Represents any socket, includes protocol information
 typedef struct {
     Net_Transport_Protocol proto;
     i64 _handle;
-} Net_Any_Socket; 
+} Net_Socket; 
 
 // TCP Socket
 typedef struct { i64 _handle; } Net_TCP_Socket;
@@ -56,22 +59,81 @@ typedef struct { i64 _handle; } Net_TCP_Socket;
 // UDP Socket
 typedef struct { i64 _handle; } Net_UDP_Socket;
 
-// Send payload to TCP socket. Returns number of bytes sent. If the number is
-// negative, that means an error has occoured and it can be cast to an IO_Error.
-isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+static const Net_Socket BAD_SOCKET = {._handle = -1};
 
-// Send payload to UDP socket. Returns number of bytes sent. If the number is
-// negative, that means an error has occoured and it can be cast to an IO_Error.
-isize net_send_udp(Net_UDP_Socket sock, Bytes payload);
+// Returns a BAD_SOCKET on error
+Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto);
 
-// Read from TCP socket into buffer. Return number of bytes read, if the number
-// is negative an error happened.
-isize net_receive_tcp(Net_TCP_Socket sock, Bytes buf);
+isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
 
-// Read from UDP socket into buffer. Return number of bytes read, if the number
-// is negative an error happened.
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf);
+// isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
+
+static inline
+bool net_socket_ok(Net_Socket s){
+    return s._handle != BAD_SOCKET._handle;
+}
 
 #ifdef BASE_C_IMPLEMENTATION
+
+#ifdef __linux__
+
+#include <unistd.h>
+#include <arpa/inet.h>
+
+static inline
+int _unwrap_addr_family(Net_Address_Family family){
+    switch (family) {
+    case Net_IPv4: return AF_INET;
+    case Net_IPv6: return AF_INET6;
+    default: return -1;
+    }
+}
+
+static inline
+int _unwrap_sock_protocol(Net_Transport_Protocol proto){
+    switch (proto) {
+    case Transport_TCP: return SOCK_STREAM;
+    case Transport_UDP: return SOCK_DGRAM;
+    default: return -1;
+    }
+}
+
+static inline
+int _unwrap_address(Net_Address addr){
+    unimplemented("Missing endianess");
+    switch(addr.family){
+    case Net_IPv4: {
+        struct sockaddr_in os_addr = {0};
+        os_addr.sin_family = _unwrap_addr_family(addr.family);
+        // os_addr.sin_addr.s_addr = unimplemented();
+
+
+    } break;
+
+    case Net_IPv6: unimplemented(); break;
+    }
+
+}
+
+Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto){
+    int af = _unwrap_addr_family(family); 
+    int sp = _unwrap_sock_protocol(proto);
+
+    int sock_fd = socket(af, sp, 0);
+    if(sock_fd < 0){
+        return BAD_SOCKET;
+    }
+    // TODO set REUSE flag
+
+    return (Net_Socket){
+        .proto = proto,
+        ._handle = sock_fd,
+    };
+}
+
+#else
+#error "Unimplemented platform"
+#endif
+
 
 #endif

@@ -32,12 +32,33 @@ typedef double f64;
 
 typedef char const * cstring;
 
+static inline
+int arch_is_big_endian(){
+	union {
+		u16 x;
+		u8  b[2];
+	} u;
+	u.x = 1;
+	return u.b[1] == 1;
+}
+
+static inline
+void swap_bytes(byte* data, isize len){
+	for(isize i = 0; i < (len / 2); i += 1){
+		byte temp = data[i];
+		data[i] = data[len - (i + 1)];
+		data[len - (i + 1)] = temp;
+	}
+}
+
+#define SwapBytes(Ptr) swap_bytes((byte*)(Ptr), sizeof(*(Ptr)))
+
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 
-#define Min(a, b) ((a) < (b) ? (a) : (b))
-#define Max(a, b) ((a) > (b) ? (a) : (b))
-#define Clamp(lo, x, hi) Min(Max(lo, x), hi)
+#define Min(A, B) ((A) < (B) ? (A) : (B))
+#define MAx(A, B) ((A) > (B) ? (A) : (B))
+#define Clamp(Lo, X, Hi) Min(Max(Lo, X), Hi)
 
 #define ContainerOf(Ptr, Type, Member) \
 	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))

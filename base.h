@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "cf5528d49575b453da756e293e171be9ad472c5b"
+#define BASE_C_VERSION "390bf74ecc8839f2558a33e41db78751b7df14ad"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -32,12 +32,33 @@ typedef double f64;
 
 typedef char const * cstring;
 
+static inline
+int arch_is_big_endian(){
+	union {
+		u16 x;
+		u8  b[2];
+	} u;
+	u.x = 1;
+	return u.b[1] == 1;
+}
+
+static inline
+void swap_bytes(byte* data, isize len){
+	for(isize i = 0; i < (len / 2); i += 1){
+		byte temp = data[i];
+		data[i] = data[len - (i + 1)];
+		data[len - (i + 1)] = temp;
+	}
+}
+
+#define SwapBytes(Ptr) swap_bytes((byte*)(Ptr), sizeof(*(Ptr)))
+
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 
-#define Min(a, b) ((a) < (b) ? (a) : (b))
-#define Max(a, b) ((a) > (b) ? (a) : (b))
-#define Clamp(lo, x, hi) Min(Max(lo, x), hi)
+#define Min(A, B) ((A) < (B) ? (A) : (B))
+#define MAx(A, B) ((A) > (B) ? (A) : (B))
+#define Clamp(Lo, X, Hi) Min(Max(Lo, X), Hi)
 
 #define ContainerOf(Ptr, Type, Member) \
 	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))
@@ -1193,6 +1214,9 @@ error_exit:
 }
 #endif
 
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 typedef enum {
     Net_IPv4,
     Net_IPv6,
@@ -1231,13 +1255,13 @@ typedef struct {
 // Handle to an OS socket
 typedef struct {
     i64 _handle;
-} Net_Socket;
+} Net_Raw_Socket;
 
 // Represents any socket, includes protocol information
 typedef struct {
     Net_Transport_Protocol proto;
     i64 _handle;
-} Net_Any_Socket;
+} Net_Socket;
 
 // TCP Socket
 typedef struct { i64 _handle; } Net_TCP_Socket;
@@ -1245,22 +1269,79 @@ typedef struct { i64 _handle; } Net_TCP_Socket;
 // UDP Socket
 typedef struct { i64 _handle; } Net_UDP_Socket;
 
-// Send payload to TCP socket. Returns number of bytes sent. If the number is
-// negative, that means an error has occoured and it can be cast to an IO_Error.
-isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+static const Net_Socket BAD_SOCKET = {._handle = -1};
 
-// Send payload to UDP socket. Returns number of bytes sent. If the number is
-// negative, that means an error has occoured and it can be cast to an IO_Error.
-isize net_send_udp(Net_UDP_Socket sock, Bytes payload);
+// Returns a BAD_SOCKET on error
+Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto);
 
-// Read from TCP socket into buffer. Return number of bytes read, if the number
-// is negative an error happened.
-isize net_receive_tcp(Net_TCP_Socket sock, Bytes buf);
+isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
 
-// Read from UDP socket into buffer. Return number of bytes read, if the number
-// is negative an error happened.
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf);
+// isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
+
+static inline
+bool net_socket_ok(Net_Socket s){
+    return s._handle != BAD_SOCKET._handle;
+}
 
 #ifdef BASE_C_IMPLEMENTATION
+
+#ifdef __linux__
+
+#include <unistd.h>
+#include <arpa/inet.h>
+
+static inline
+int _unwrap_addr_family(Net_Address_Family family){
+    switch (family) {
+    case Net_IPv4: return AF_INET;
+    case Net_IPv6: return AF_INET6;
+    default: return -1;
+    }
+}
+
+static inline
+int _unwrap_sock_protocol(Net_Transport_Protocol proto){
+    switch (proto) {
+    case Transport_TCP: return SOCK_STREAM;
+    case Transport_UDP: return SOCK_DGRAM;
+    default: return -1;
+    }
+}
+
+static inline
+int _unwrap_address(Net_Address addr){
+    unimplemented("Missing endianess");
+    switch(addr.family){
+    case Net_IPv4: {
+        struct sockaddr_in os_addr = {0};
+        os_addr.sin_family = _unwrap_addr_family(addr.family);
+        // os_addr.sin_addr.s_addr = unimplemented();
+
+    } break;
+
+    case Net_IPv6: unimplemented(); break;
+    }
+
+}
+
+Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto){
+    int af = _unwrap_addr_family(family);
+    int sp = _unwrap_sock_protocol(proto);
+
+    int sock_fd = socket(af, sp, 0);
+    if(sock_fd < 0){
+        return BAD_SOCKET;
+    }
+    // TODO set REUSE flag
+
+    return (Net_Socket){
+        .proto = proto,
+        ._handle = sock_fd,
+    };
+}
+
+#else
+#error "Unimplemented platform"
+#endif
 
 #endif
