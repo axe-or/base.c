@@ -10,7 +10,7 @@ deps = [
     'prelude.h',
     'assert.h', 'utf8.h', 'list.h',
     'memory.h', 'io.h',
-    'string.h', 'bytes_buffer.h', 'arena_allocator.h', 'heap_allocator.h',  'file.h',
+    'string.h', 'bytes_buffer.h', 'arena_allocator.h', 'heap_allocator.h', 'file.h', 'net.h',
 ]
 
 src_out = []
