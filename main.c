@@ -6,7 +6,7 @@
 int main(){
 	String s = str_from("H한ellИo");
 	printf("\"%.*s\"\n", FmtString(s));
-	IP_Address addr = IPV6_LOOPBACK_ADDR;
+	Net_Address addr = IPV6_LOOPBACK_ADDR;
 
 	printf("Bytes: %ld Codepoints: %ld\n", s.len, str_codepoint_count(s));
 	for(isize n = 0; n < 7; n++){

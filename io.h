@@ -24,7 +24,7 @@ typedef enum {
 	IO_Err_End = -1,
 	IO_Err_Closed = -2,
 	IO_Err_Out_Of_Memory = -3,
-
+	IO_Socket_Error = -4,
 	IO_Err_Unknown = -127,
 } IO_Error;
 

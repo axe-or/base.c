@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "2c4e8220a7a83283bca3267e4a17f9e02061fae0"
+#define BASE_C_VERSION "cf5528d49575b453da756e293e171be9ad472c5b"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -488,7 +488,7 @@ typedef enum {
 	IO_Err_End = -1,
 	IO_Err_Closed = -2,
 	IO_Err_Out_Of_Memory = -3,
-
+	IO_Socket_Error = -4,
 	IO_Err_Unknown = -127,
 } IO_Error;
 
@@ -1228,9 +1228,38 @@ typedef struct {
     u16 port;
 } Net_Endpoint;
 
+// Handle to an OS socket
 typedef struct {
     i64 _handle;
 } Net_Socket;
+
+// Represents any socket, includes protocol information
+typedef struct {
+    Net_Transport_Protocol proto;
+    i64 _handle;
+} Net_Any_Socket;
+
+// TCP Socket
+typedef struct { i64 _handle; } Net_TCP_Socket;
+
+// UDP Socket
+typedef struct { i64 _handle; } Net_UDP_Socket;
+
+// Send payload to TCP socket. Returns number of bytes sent. If the number is
+// negative, that means an error has occoured and it can be cast to an IO_Error.
+isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+
+// Send payload to UDP socket. Returns number of bytes sent. If the number is
+// negative, that means an error has occoured and it can be cast to an IO_Error.
+isize net_send_udp(Net_UDP_Socket sock, Bytes payload);
+
+// Read from TCP socket into buffer. Return number of bytes read, if the number
+// is negative an error happened.
+isize net_receive_tcp(Net_TCP_Socket sock, Bytes buf);
+
+// Read from UDP socket into buffer. Return number of bytes read, if the number
+// is negative an error happened.
+isize net_receive_udp(Net_UDP_Socket sock, Bytes buf);
 
 #ifdef BASE_C_IMPLEMENTATION
 
