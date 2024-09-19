@@ -26,8 +26,7 @@ int main(){
 	};
 	server.port = 9000;
 
-	Net_UDP_Socket udpsk = { sk._handle };
-	isize res = net_send_udp(udpsk, (Bytes){.data = (void*)msg, .len = 5}, server);
+	isize res = net_send_udp(net_udp_sock(sk), (Bytes){.data = (void*)msg, .len = 5}, server);
 	printf("Res: %lu\n", res);
 
 	return 0;

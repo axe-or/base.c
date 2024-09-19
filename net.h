@@ -64,7 +64,28 @@ static const Net_Socket BAD_SOCKET = {._handle = -1};
 // Returns a BAD_SOCKET on error
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto);
 
+// Send payload to endpoint using socket
 isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
+
+// Cast a generic socket to a UDP socket.
+static inline
+Net_UDP_Socket net_udp_sock(Net_Socket sock){
+	bool ok = sock.proto == Transport_UDP;
+	debug_assert(ok, "Not a UDP socket.");
+	return (Net_UDP_Socket){
+		._handle = ok ? sock._handle : 0,
+	};
+}
+
+// Cast a generic socket to a TCP socket.
+static inline
+Net_TCP_Socket net_tcp_sock(Net_Socket sock){
+	bool ok = sock.proto == Transport_TCP;
+	debug_assert(ok, "Not a TCP socket.");
+	return (Net_TCP_Socket){
+		._handle = ok ? sock._handle : 0,
+	};
+}
 
 // isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
 
