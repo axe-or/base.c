@@ -61,11 +61,17 @@ typedef struct { i64 _handle; } Net_UDP_Socket;
 
 static const Net_Socket BAD_SOCKET = {._handle = -1};
 
+// Returns if bind was successful
+bool net_bind(Net_Socket sock, Net_Endpoint endpoint);
+
 // Returns a BAD_SOCKET on error
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto);
 
 // Send payload to endpoint using socket
 isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
+
+// Receive payload from endpoint
+isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
 
 // Cast a generic socket to a UDP socket.
 static inline
@@ -87,7 +93,6 @@ Net_TCP_Socket net_tcp_sock(Net_Socket sock){
 	};
 }
 
-// isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
 
 static inline
 bool net_socket_ok(Net_Socket s){
@@ -147,6 +152,25 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	return os_addr;
 }
 
+
+bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
+	switch(endpoint.address.family){
+		case Net_IPv4: {
+			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
+			int status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+			return status >= 0;
+		} break;
+
+		case Net_IPv6: {
+			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
+			int status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+			return status >= 0;
+		} break;
+	}
+
+	return false;
+}
+
 isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 	switch(to.address.family){
 		case Net_IPv4: {
@@ -175,6 +199,10 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 	}
 
 	return -1;
+}
+
+isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from){
+	unimplemented();
 }
 
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto){
