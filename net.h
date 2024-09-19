@@ -38,7 +38,7 @@ typedef enum {
 } Net_Transport_Protocol;
 
 typedef struct {
-    Net_Address ip;
+    Net_Address address;
     u16 port;
 } Net_Endpoint;
 
@@ -99,20 +99,61 @@ int _unwrap_sock_protocol(Net_Transport_Protocol proto){
 }
 
 static inline
-int _unwrap_address(Net_Address addr){
-    unimplemented("Missing endianess");
-    switch(addr.family){
-    case Net_IPv4: {
-        struct sockaddr_in os_addr = {0};
-        os_addr.sin_family = _unwrap_addr_family(addr.family);
-        // os_addr.sin_addr.s_addr = unimplemented();
+struct sockaddr_in _unwrap_endpoint_ip4(Net_Endpoint addr){
+	struct sockaddr_in os_addr = {0};
 
+	os_addr.sin_family = _unwrap_addr_family(addr.address.family);
+	os_addr.sin_port = addr.port;
+	mem_copy(&os_addr.sin_addr.s_addr, addr.address.data.ip4, 4);
+	if(!arch_is_big_endian()){
+		SwapBytes(&os_addr.sin_addr.s_addr);
+		SwapBytes(&os_addr.sin_port);
+	}
+	return os_addr;
+}
 
-    } break;
+static inline
+struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
+	struct sockaddr_in6 os_addr = {0};
+	os_addr.sin6_port = addr.port;
+	os_addr.sin6_family = _unwrap_addr_family(addr.address.family);
+	mem_copy(&os_addr.sin6_addr, addr.address.data.ip6, 16);
 
-    case Net_IPv6: unimplemented(); break;
-    }
+	if(!arch_is_big_endian()){
+		SwapBytes(&os_addr.sin6_addr);
+		SwapBytes(&os_addr.sin6_port);
+	}
+	return os_addr;
+}
 
+isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
+	switch(to.address.family){
+		case Net_IPv4: {
+			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(to);
+			printf("Sending to IP4: %08x : %d (%d)\n", os_endpoint.sin_addr.s_addr, os_endpoint.sin_port, htons(9000));
+			isize n = sendto(
+				sock._handle,
+				payload.data,
+				payload.len,
+				0,
+				(struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+			return n;
+		} break;
+
+		case Net_IPv6: {
+			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(to);
+			// printf("Sending to IP4: %08x : %d (%d)\n", os_endpoint.sin6_addr, os_endpoint.sin_port, htons(9000));
+			isize n = sendto(
+				sock._handle,
+				payload.data,
+				payload.len,
+				0,
+				(struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+			return n;
+		} break;
+	}
+
+	return -1;
 }
 
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto){
