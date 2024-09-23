@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 cc='gcc -std=c11'
-cflags='-O2 -Wall -Wextra -fPIC -I.'
+cflags='-O2 -Wall -Wextra -fPIC -I. -g'
 errflags='-Wno-unused-label -Werror=vla'
 ldflags=''
 

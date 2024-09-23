@@ -70,8 +70,8 @@ Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol p
 // Send payload to endpoint using socket
 isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
 
-// Receive payload from endpoint
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from);
+// Receive payload from UDP socket, the remote address is written to `remote` if it is not NULL
+isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote);
 
 // Cast a generic socket to a UDP socket.
 static inline
@@ -201,8 +201,40 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 	return -1;
 }
 
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint from){
-	unimplemented();
+isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
+	struct sockaddr addr = {0};
+	uint addr_len = sizeof(addr);
+	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, &addr, &addr_len);
+
+	if(remote){
+		if(addr_len == sizeof(struct sockaddr_in)){
+			struct sockaddr_in* os_addr = (struct sockaddr_in *)(&addr);
+			if(!arch_is_big_endian()){
+				SwapBytes(&os_addr->sin_addr.s_addr);
+				SwapBytes(&os_addr->sin_port);
+			}
+
+			remote->address.family = Net_IPv4;
+			remote->port = os_addr->sin_port;
+			mem_copy(&remote->address.data.ip6, &os_addr->sin_addr, 16);
+		}
+		else if(addr_len == sizeof(struct sockaddr_in6)){
+			struct sockaddr_in6* os_addr = (struct sockaddr_in6 *)(&addr);
+			if(!arch_is_big_endian()){
+				SwapBytes(&os_addr->sin6_addr);
+				SwapBytes(&os_addr->sin6_port);
+			}
+
+			remote->address.family = Net_IPv6;
+			remote->port = os_addr->sin6_port;
+			mem_copy(&remote->address.data.ip6, &os_addr->sin6_addr, 16);
+		}
+	}
+
+	// printf("ADDR LEN: %u\n", addr_len);
+	// printf("Ip6 %zu", );
+	// printf("Ip4 %zu", sizeof(struct sockaddr_in));
+	return n;
 }
 
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto){
