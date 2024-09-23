@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "de84348067f44a19943f7f2ae523cb6defd65b12"
+#define BASE_C_VERSION "44dff003dee4fe857a3eb42126e1bc7324c16757"
 
 #include <stddef.h>
 #include <stdint.h>

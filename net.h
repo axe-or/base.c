@@ -202,13 +202,13 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 }
 
 isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
-	struct sockaddr addr = {0};
-	uint addr_len = sizeof(addr);
-	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, &addr, &addr_len);
+	alignas(16) byte addr_data[64] = {0}; // Enough to store IPv6
+	uint addr_len = 64;
+	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);
 
 	if(remote){
 		if(addr_len == sizeof(struct sockaddr_in)){
-			struct sockaddr_in os_addr = *(struct sockaddr_in *)(&addr);
+			struct sockaddr_in os_addr = *(struct sockaddr_in *)(&addr_data);
 			if(!arch_is_big_endian()){
 				SwapBytes(&os_addr.sin_addr.s_addr);
 				SwapBytes(&os_addr.sin_port);
@@ -219,7 +219,7 @@ isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
 			mem_copy(&remote->address.data.ip4, &os_addr.sin_addr, 4);
 		}
 		else if(addr_len == sizeof(struct sockaddr_in6)){
-			struct sockaddr_in6 os_addr = *(struct sockaddr_in6 *)(&addr);
+			struct sockaddr_in6 os_addr = *(struct sockaddr_in6 *)(&addr_data);
 			if(!arch_is_big_endian()){
 				SwapBytes(&os_addr.sin6_addr);
 				SwapBytes(&os_addr.sin6_port);
