@@ -201,7 +201,7 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 }
 
 isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
-	alignas(16) byte addr_data[64] = {0}; // Enough to store IPv6
+	alignas(alignof(struct sockaddr_in6)) byte addr_data[sizeof(sockaddr_in6) * 2] = {0}; // Enough to store IPv6 with some room to spare
 	uint addr_len = 64;
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);
 
