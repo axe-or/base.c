@@ -152,7 +152,6 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	return os_addr;
 }
 
-
 bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
 	switch(endpoint.address.family){
 		case Net_IPv4: {

@@ -8,7 +8,7 @@ from math import ceil
 # The order here is very crucial, includes must be in a DAG
 deps = [
     'prelude.h',
-    'assert.h', 'utf8.h', 'list.h',
+    'assert.h', 'spinlock.h', 'utf8.h', 'list.h',
     'memory.h', 'io.h',
     'string.h', 'bytes_buffer.h', 'arena_allocator.h', 'heap_allocator.h', 'file.h', 'net.h',
 ]
