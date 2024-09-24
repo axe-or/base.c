@@ -1,9 +1,15 @@
 #pragma once
 #include "prelude.h"
 
-i32 hash_fnv32_ex(void const* data, isize len, i32 seed){
-i64 hash_fnv64_ex(void const* data, isize len, i64 seed){
+i32 hash_fnv32_ex(void const* data, isize len, i32 seed);
 
+i64 hash_fnv64_ex(void const* data, isize len, i64 seed);
+
+i32 hash_fnv32(void const* data, isize len);
+
+i64 hash_fnv64(void const* data, isize len);
+
+#ifdef BASE_C_IMPLEMENTATION
 i32 hash_fnv32_ex(void const* data, isize len, i32 seed){
 	i32 h = seed;
 	byte const* buf = (byte const*)data;
@@ -24,14 +30,13 @@ i64 hash_fnv64_ex(void const* data, isize len, i64 seed){
 	return h;
 }
 
-static inline
 i64 hash_fnv64(void const* data, isize len){
 	return hash_fnv64_ex(data, len, (i32)0x811c9dc5);
 }
 
-static inline
 i32 hash_fnv32(void const* data, isize len){
 	return hash_fnv64_ex(data, len, (i64)0xcbf29ce484222325);
 }
 
+#endif
 
