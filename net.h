@@ -59,6 +59,7 @@ typedef struct { i64 _handle; } Net_TCP_Socket;
 // UDP Socket
 typedef struct { i64 _handle; } Net_UDP_Socket;
 
+// Error socket
 static const Net_Socket BAD_SOCKET = {._handle = -1};
 
 // Returns if bind was successful
@@ -92,7 +93,6 @@ Net_TCP_Socket net_tcp_sock(Net_Socket sock){
 		._handle = ok ? sock._handle : 0,
 	};
 }
-
 
 static inline
 bool net_socket_ok(Net_Socket s){
@@ -230,9 +230,6 @@ isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
 		}
 	}
 
-	// printf("ADDR LEN: %u\n", addr_len);
-	// printf("Ip6 %zu", );
-	// printf("Ip4 %zu", sizeof(struct sockaddr_in));
 	return n;
 }
 
