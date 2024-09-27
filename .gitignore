@@ -2,3 +2,5 @@
 *.o
 *.a
 *.lib
+*.zip
+*.tar.gz

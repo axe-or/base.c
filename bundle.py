@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
+from os import path
 import re
 import subprocess as sb
 from zipfile import ZipFile
 from math import ceil
+import zipfile
 
 # The order here is very crucial, includes must be in a DAG
 deps = [
     'prelude.h',
     'assert.h', 'utf8.h', 'list.h', 'fnv_hash.h', 'spinlock.h',
     'memory.h', 'io.h',
-    'string.h', 'bytes_buffer.h', 'dict.h', 'arena_allocator.h',
+    'string.h', 'bytes_buffer.h', 'arena_allocator.h',
     'heap_allocator.h', 'file.h', 'net.h',
 ]
 
@@ -46,4 +48,16 @@ with open('base.h', 'w') as f:
     n = f.write(src_out)
     print(f'Wrote {ceil(n / 1024)}KiB to base.h ({git_version})')
 
+with open('base.c', 'w') as f:
+    f.write('#define BASE_C_IMPLEMENTATION 1\n'+
+            '#include "base.h"\n')
+    print(f'Created base.c')
+
 sb.call(["git", "add", "base.h"])
+
+with ZipFile('base.zip', 'w', compresslevel=9) as zf:
+    zf.write('base.h', path.join('base', 'base.h'))
+    zf.write('base.h', path.join('base', 'base.c'))
+    zf.write('base.h', path.join('base', 'LICENSE'))
+    print('Created source release: base.zip') 
+
