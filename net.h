@@ -199,7 +199,6 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 	switch(to.address.family){
 		case Net_IPv4: {
 			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(to);
-			printf("Sending to IP4: %08x : %d (%d)\n", os_endpoint.sin_addr.s_addr, os_endpoint.sin_port, htons(9000));
 			isize n = sendto(
 				sock._handle,
 				payload.data,
@@ -211,7 +210,6 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 
 		case Net_IPv6: {
 			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(to);
-			// printf("Sending to IP4: %08x : %d (%d)\n", os_endpoint.sin6_addr, os_endpoint.sin_port, htons(9000));
 			isize n = sendto(
 				sock._handle,
 				payload.data,
@@ -255,9 +253,6 @@ isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
 		}
 	}
 
-	// printf("ADDR LEN: %u\n", addr_len);
-	// printf("Ip6 %zu", );
-	// printf("Ip4 %zu", sizeof(struct sockaddr_in));
 	return n;
 }
 

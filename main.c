@@ -12,7 +12,7 @@
 int main(){
 	Net_Socket sock = net_create_socket(Net_IPv6, Transport_TCP);
 	Net_Endpoint remote = {
-		.address = {.data = {0}, .family = Net_IPv6},
+		.address = {.data = {{0}}, .family = Net_IPv6},
 		.port = 9000
 	};
 
