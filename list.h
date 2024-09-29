@@ -26,7 +26,7 @@ void list_init(List_Node* target){
 }
 
 // Get pointer of structure containing the list
-#define list_entry(Ptr, Type, Member) ContainerOf(Ptr, Type, Member)
+#define list_entry(Ptr, Type, Member) container_of(Ptr, Type, Member)
 
 #define list_foreach(IterVar, ListHead) \
 	for(List_Node* IterVar = ListHead.next; IterVar != &ListHead; IterVar = IterVar->next)

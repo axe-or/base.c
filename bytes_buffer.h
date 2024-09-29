@@ -99,7 +99,7 @@ byte* buffer_bytes(Bytes_Buffer* bb){
 // Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
 isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
 	if(bb->len == 0){ return 0; }
-	isize n = Min(size, bb->len);
+	isize n = min(size, bb->len);
 	mem_copy(dest, &bb->data[bb->last_read], n);
 	bb->last_read += n;
 	bb->len -= n;
@@ -120,7 +120,7 @@ bool buffer_resize(Bytes_Buffer* bb, isize new_size){
 	byte* new_data = New(byte, new_size, bb->allocator);
 	if(new_data == NULL){ return false; }
 
-	mem_copy(new_data, bb->data, Min(new_size, bb->len));
+	mem_copy(new_data, bb->data, min(new_size, bb->len));
 	mem_free(bb->allocator, bb->data);
 	bb->data = new_data;
 	bb->cap = new_size;

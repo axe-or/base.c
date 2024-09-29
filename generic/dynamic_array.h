@@ -28,7 +28,7 @@ generic_func
 bool container_func(init)(Dyn_Array* arr, Mem_Allocator allocator, isize initial_cap){
 	T* data = NULL;
 	if(initial_cap > 0){
-		data = mem_alloc(allocator, sizeof(T) * initial_cap, alignof(T))
+		data = mem_alloc(allocator, sizeof(T) * initial_cap, alignof(T));
 		if(!data){ return false; }
 	}
 	arr->data = data;
@@ -46,12 +46,32 @@ void container_func(destroy)(Dyn_Array* arr){
 
 generic_func
 bool container_func(resize)(Dyn_Array* arr, isize new_cap){
-	return false;
+	T* new_data = mem_alloc(arr->allocator, sizeof(T) * new_cap, alignof(T));
+	if(!new_data){ return false; }
+
+	isize new_len = min(new_cap, arr->len);
+	mem_copy(new_data, arr->data, new_len * sizeof(T));
+	arr->cap = new_cap;
+	arr->len = new_len;
+
+	mem_free(arr->allocator, arr->data);
+	arr->data = new_data;
+	return true;
 }
 
-// generic_func
-// bool container_func(append)(Dyn_Array* arr, T elem){
-// }
+generic_func
+bool container_func(append)(Dyn_Array* arr, T elem){
+	if(arr->len >= arr->cap){
+		isize new_size = align_forward_size(1 + (arr->len * 2), 16);
+		if(!container_func(resize)(arr, new_size)){
+			return false;
+		}
+	}
+
+	arr->data[arr->len] = elem;
+	arr->len += 1;
+	return true;
+}
 
 #undef Dyn_Array
 #undef T

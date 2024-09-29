@@ -66,6 +66,17 @@ uintptr align_forward_ptr(uintptr p, uintptr a){
 	return p;
 }
 
+// Align p to alignment a, this works for any positive non-zero alignment
+static inline
+uintptr align_forward_size(isize p, isize a){
+	debug_assert(a > 0, "Invalid size alignment");
+	isize mod = p % a;
+	if(mod > 0){
+		p += (a - mod);
+	}
+	return p;
+}
+
 // Get capabilities of allocator as a number, you can use bit operators to check it.
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities);
 

@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "a89975a1c6721f5eb87a0be7143e3cf4f20b8870"
+#define BASE_C_VERSION "c05c403fddc35fa589c30c2bc9b68a74b56e328e"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -43,7 +43,7 @@ int arch_is_big_endian(){
 }
 
 static inline
-void swap_bytes(byte* data, isize len){
+void swap_bytes_raw(byte* data, isize len){
 	for(isize i = 0; i < (len / 2); i += 1){
 		byte temp = data[i];
 		data[i] = data[len - (i + 1)];
@@ -51,16 +51,16 @@ void swap_bytes(byte* data, isize len){
 	}
 }
 
-#define SwapBytes(Ptr) swap_bytes((byte*)(Ptr), sizeof(*(Ptr)))
+#define swap_bytes(Ptr) swap_bytes_raw((byte*)(Ptr), sizeof(*(Ptr)))
 
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 
-#define Min(A, B) ((A) < (B) ? (A) : (B))
-#define MAx(A, B) ((A) > (B) ? (A) : (B))
-#define Clamp(Lo, X, Hi) Min(Max(Lo, X), Hi)
+#define min(A, B) ((A) < (B) ? (A) : (B))
+#define max(A, B) ((A) > (B) ? (A) : (B))
+#define clamp(Lo, X, Hi) min(max(Lo, X), Hi)
 
-#define ContainerOf(Ptr, Type, Member) \
+#define container_of(Ptr, Type, Member) \
 	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))
 
 #ifndef __cplusplus
@@ -334,7 +334,7 @@ void list_init(List_Node* target){
 }
 
 // Get pointer of structure containing the list
-#define list_entry(Ptr, Type, Member) ContainerOf(Ptr, Type, Member)
+#define list_entry(Ptr, Type, Member) container_of(Ptr, Type, Member)
 
 #define list_foreach(IterVar, ListHead) \
 	for(List_Node* IterVar = ListHead.next; IterVar != &ListHead; IterVar = IterVar->next)
@@ -426,6 +426,17 @@ static inline
 uintptr align_forward_ptr(uintptr p, uintptr a){
 	debug_assert(mem_valid_alignment(a), "Invalid memory alignment");
 	uintptr mod = p & (a - 1);
+	if(mod > 0){
+		p += (a - mod);
+	}
+	return p;
+}
+
+// Align p to alignment a, this works for any positive non-zero alignment
+static inline
+uintptr align_forward_size(isize p, isize a){
+	debug_assert(a > 0, "Invalid size alignment");
+	isize mod = p % a;
 	if(mod > 0){
 		p += (a - mod);
 	}
@@ -944,7 +955,7 @@ byte* buffer_bytes(Bytes_Buffer* bb){
 // Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
 isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
 	if(bb->len == 0){ return 0; }
-	isize n = Min(size, bb->len);
+	isize n = min(size, bb->len);
 	mem_copy(dest, &bb->data[bb->last_read], n);
 	bb->last_read += n;
 	bb->len -= n;
@@ -965,7 +976,7 @@ bool buffer_resize(Bytes_Buffer* bb, isize new_size){
 	byte* new_data = New(byte, new_size, bb->allocator);
 	if(new_data == NULL){ return false; }
 
-	mem_copy(new_data, bb->data, Min(new_size, bb->len));
+	mem_copy(new_data, bb->data, min(new_size, bb->len));
 	mem_free(bb->allocator, bb->data);
 	bb->data = new_data;
 	bb->cap = new_size;
@@ -1143,8 +1154,8 @@ Mem_Allocator heap_allocator(){
 }
 #endif
 
-// Reads whole file into memory, it allocates one extra byte implicitly, to
-// allow for better interop with cstrings.
+// Reads whole file into memory, it allocates one extra byte implicitly and sets
+// it to 0, to allow for better interop with cstrings.
 Bytes file_read_all(String path, Mem_Allocator allocator);
 
 // Write n bytes of data to file at path. Returns number of bytes written
@@ -1158,7 +1169,6 @@ isize file_append(String path, byte const* data, isize n);
 #ifdef BASE_C_IMPLEMENTATION
 
 #include <stdio.h>
-
 #define MAX_PATH_LEN 4096
 
 static inline
@@ -1173,13 +1183,13 @@ isize _file_add_content(cstring path, cstring flags, byte const* data, isize nby
 
 isize file_write(String path, byte const* data, isize n){
 	char path_buf[MAX_PATH_LEN] = {0};
-	mem_copy(path_buf, path.data, Min(path.len, MAX_PATH_LEN - 1));
+	mem_copy(path_buf, path.data, min(path.len, MAX_PATH_LEN - 1));
 	return _file_add_content(path_buf, "wb", data, n);
 }
 
 isize file_append(String path, byte const* data, isize n){
 	char path_buf[MAX_PATH_LEN] = {0};
-	mem_copy(path_buf, path.data, Min(path.len, MAX_PATH_LEN - 1));
+	mem_copy(path_buf, path.data, min(path.len, MAX_PATH_LEN - 1));
 	return _file_add_content(path_buf, "ab", data, n);
 }
 
@@ -1187,7 +1197,7 @@ Bytes file_read_all(String path, Mem_Allocator allocator){
 	static const Bytes error = {0, 0};
 
 	char path_buf[MAX_PATH_LEN] = {0};
-	mem_copy(path_buf, path.data, Min(path.len, MAX_PATH_LEN - 1));
+	mem_copy(path_buf, path.data, min(path.len, MAX_PATH_LEN - 1));
 
 	FILE* f = fopen(path_buf, "rb");
 	if(f == NULL){ goto error_exit; }

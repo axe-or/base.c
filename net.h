@@ -132,8 +132,8 @@ struct sockaddr_in _unwrap_endpoint_ip4(Net_Endpoint addr){
 	os_addr.sin_port = addr.port;
 	mem_copy(&os_addr.sin_addr.s_addr, addr.address.data.ip4, 4);
 	if(!arch_is_big_endian()){
-		SwapBytes(&os_addr.sin_addr.s_addr);
-		SwapBytes(&os_addr.sin_port);
+		swap_bytes(&os_addr.sin_addr.s_addr);
+		swap_bytes(&os_addr.sin_port);
 	}
 	return os_addr;
 }
@@ -146,8 +146,8 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	mem_copy(&os_addr.sin6_addr, addr.address.data.ip6, 16);
 
 	if(!arch_is_big_endian()){
-		SwapBytes(&os_addr.sin6_addr);
-		SwapBytes(&os_addr.sin6_port);
+		swap_bytes(&os_addr.sin6_addr);
+		swap_bytes(&os_addr.sin6_port);
 	}
 	return os_addr;
 }
@@ -210,8 +210,8 @@ isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
 		if(addr_len == sizeof(struct sockaddr_in)){
 			struct sockaddr_in os_addr = *(struct sockaddr_in *)(&addr_data);
 			if(!arch_is_big_endian()){
-				SwapBytes(&os_addr.sin_addr.s_addr);
-				SwapBytes(&os_addr.sin_port);
+				swap_bytes(&os_addr.sin_addr.s_addr);
+				swap_bytes(&os_addr.sin_port);
 			}
 
 			remote->address.family = Net_IPv4;
@@ -221,8 +221,8 @@ isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
 		else if(addr_len == sizeof(struct sockaddr_in6)){
 			struct sockaddr_in6 os_addr = *(struct sockaddr_in6 *)(&addr_data);
 			if(!arch_is_big_endian()){
-				SwapBytes(&os_addr.sin6_addr);
-				SwapBytes(&os_addr.sin6_port);
+				swap_bytes(&os_addr.sin6_addr);
+				swap_bytes(&os_addr.sin6_port);
 			}
 
 			remote->address.family = Net_IPv6;

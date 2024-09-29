@@ -43,7 +43,7 @@ int arch_is_big_endian(){
 }
 
 static inline
-void swap_bytes(byte* data, isize len){
+void swap_bytes_raw(byte* data, isize len){
 	for(isize i = 0; i < (len / 2); i += 1){
 		byte temp = data[i];
 		data[i] = data[len - (i + 1)];
@@ -51,16 +51,16 @@ void swap_bytes(byte* data, isize len){
 	}
 }
 
-#define SwapBytes(Ptr) swap_bytes((byte*)(Ptr), sizeof(*(Ptr)))
+#define swap_bytes(Ptr) swap_bytes_raw((byte*)(Ptr), sizeof(*(Ptr)))
 
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 
-#define Min(A, B) ((A) < (B) ? (A) : (B))
-#define MAx(A, B) ((A) > (B) ? (A) : (B))
-#define Clamp(Lo, X, Hi) Min(Max(Lo, X), Hi)
+#define min(A, B) ((A) < (B) ? (A) : (B))
+#define max(A, B) ((A) > (B) ? (A) : (B))
+#define clamp(Lo, X, Hi) min(max(Lo, X), Hi)
 
-#define ContainerOf(Ptr, Type, Member) \
+#define container_of(Ptr, Type, Member) \
 	((Type *)(((void *)(Ptr)) - offsetof(Type, Member)))
 
 #ifndef __cplusplus
