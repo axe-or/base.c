@@ -45,6 +45,11 @@ void container_func(destroy)(Dyn_Array* arr){
 }
 
 generic_func
+void container_func(clear)(Dyn_Array* arr){
+	arr->len = 0;
+}
+
+generic_func
 bool container_func(resize)(Dyn_Array* arr, isize new_cap){
 	T* new_data = mem_alloc(arr->allocator, sizeof(T) * new_cap, alignof(T));
 	if(!new_data){ return false; }
@@ -74,23 +79,47 @@ bool container_func(append)(Dyn_Array* arr, T elem){
 }
 
 generic_func
+bool container_func(pop)(Dyn_Array* arr){
+	if(arr->len <= 0){ return false; }
+	arr->len -= 1;
+	return true;
+}
+
+generic_func
 bool container_func(shrink)(Dyn_Array* arr){
 	return container_func(resize)(arr, arr->len);
 }
 
 generic_func
 bool container_func(remove)(Dyn_Array* arr, isize idx){
-	debug_assert(idx < arr->len && idx >= 0, "Out of bounds removal");
+	debug_assert(idx < arr->len && idx >= 0, "Out of bounds remove");
 	if(arr->len <= 0){ return false; }
 
-	mem_copy(&arr->data[idx], &arr->data[idx + 1], (arr->len - idx) * sizeof(T));
+	if(idx < arr->len - 1){
+		mem_copy(&arr->data[idx], &arr->data[idx + 1], (arr->len - idx) * sizeof(T));
+	}
 	arr->len -= 1;
 	return true;
 }
 
 generic_func
 bool container_func(insert)(Dyn_Array* arr, isize idx, T elem){
-	unimplemented();
+	debug_assert(idx <= arr->len && idx >= 0, "Out of bounds insert");
+	if(idx == arr->len){
+		return container_func(append)(arr, elem);
+	}
+
+	if(arr->len >= arr->cap){
+		isize new_size = align_forward_size(1 + (arr->len * 2), 16);
+		if(!container_func(resize)(arr, new_size)){
+			return false;
+		}
+	}
+
+	mem_copy(&arr->data[idx + 1], &arr->data[idx], (arr->len - idx) * sizeof(T));
+	arr->data[idx] = elem;
+	arr->len += 1;
+	return true;
 }
 
 #undef Dyn_Array

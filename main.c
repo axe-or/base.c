@@ -22,4 +22,13 @@ int main(){
 	ia_remove(&arr, 16);
 	ia_remove(&arr, 0);
 	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
+	ia_insert(&arr, 0, -420);
+	ia_insert(&arr, 16, -420);
+	ia_insert(&arr, arr.len, -420);
+	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
+	ia_resize(&arr, 8);
+	ia_pop(&arr);
+	ia_resize(&arr, 10);
+	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
+	ia_destroy(&arr);
 }
