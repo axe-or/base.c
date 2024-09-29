@@ -10,8 +10,12 @@
 #include "generic/dynamic_array.h"
 
 int main(){
-	Net_Socket sock = net_create_socket(Net_IPv4, Transport_TCP);
-	Net_Endpoint remote = {.address = {0}, .port = 9000};
+	Net_Socket sock = net_create_socket(Net_IPv6, Transport_TCP);
+	Net_Endpoint remote = {
+		.address = {.data = {0}, .family = Net_IPv6},
+		.port = 9000
+	};
+
 	if(!net_connect_tcp(net_tcp_sock(sock), remote)){
 		panic("Could not connect to TCP endpoint");
 	}
