@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "67be3bb11d4bb03d5c50917ed2a5016eeca4deba"
+#define BASE_C_VERSION "f7d7077bbcd41798236e5e3caccaacca44e42397"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -1295,9 +1295,6 @@ error_exit:
 	return error;
 }
 #endif
-
-#include <netinet/in.h>
-#include <sys/socket.h>
 
 typedef enum {
     Net_IPv4,

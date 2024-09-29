@@ -1,11 +1,8 @@
 #pragma once
 
 #include "assert.h"
-#include "io.h"
 #include "memory.h"
 #include "prelude.h"
-#include <netinet/in.h>
-#include <sys/socket.h>
 
 typedef enum {
     Net_IPv4,
