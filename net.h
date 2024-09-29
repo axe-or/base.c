@@ -73,6 +73,12 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
 // Receive payload from UDP socket, the remote address is written to `remote` if it is not NULL
 isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote);
 
+// Connect to endpoint using TCP socket
+bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote);
+
+// Send payload that sock is connected to, returs number of bytes sent
+isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+
 // Cast a generic socket to a UDP socket.
 static inline
 Net_UDP_Socket net_udp_sock(Net_Socket sock){
@@ -92,7 +98,6 @@ Net_TCP_Socket net_tcp_sock(Net_Socket sock){
 		._handle = ok ? sock._handle : 0,
 	};
 }
-
 
 static inline
 bool net_socket_ok(Net_Socket s){
@@ -152,23 +157,42 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	return os_addr;
 }
 
+bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote){
+	int status = 0;
+	switch(remote.address.family){
+		case Net_IPv4: {
+			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(remote);
+			status = connect(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
+		case Net_IPv6: {
+			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(remote);
+			status = connect(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
+	}
+
+	return status >= 0;
+}
+
+isize net_send_tcp(Net_TCP_Socket sock, Bytes payload){
+	isize n = send(sock._handle, payload.data, payload.len, 0);
+	return n;
+}
 
 bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
+	int status = 0;
 	switch(endpoint.address.family){
 		case Net_IPv4: {
 			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
-			int status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-			return status >= 0;
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
 		} break;
 
 		case Net_IPv6: {
 			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
-			int status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-			return status >= 0;
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
 		} break;
 	}
 
-	return false;
+	return status >= 0;
 }
 
 isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
@@ -202,7 +226,7 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 }
 
 isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
-	alignas(16) byte addr_data[64] = {0}; // Enough to store IPv6
+	alignas(alignof(struct sockaddr)) byte addr_data[64] = {0}; // Enough to store IPv6
 	uint addr_len = 64;
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);
 
