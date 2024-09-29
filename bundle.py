@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-from os import path
 import re
 import subprocess as sb
-from zipfile import ZipFile
+from os import path, listdir
 from math import ceil
-import zipfile
+from zipfile import ZipFile, ZIP_DEFLATED
 
 # The order here is very crucial, includes must be in a DAG
 deps = [
@@ -55,9 +54,12 @@ with open('base.c', 'w') as f:
 
 sb.call(["git", "add", "base.h"])
 
-with ZipFile('base.zip', 'w', compresslevel=9) as zf:
+with ZipFile('base.zip', 'w', compression=ZIP_DEFLATED,  compresslevel=9) as zf:
     zf.write('base.h', path.join('base', 'base.h'))
-    zf.write('base.h', path.join('base', 'base.c'))
-    zf.write('base.h', path.join('base', 'LICENSE'))
+    zf.write('base.c', path.join('base', 'base.c'))
+    zf.write('LICENSE', path.join('base', 'LICENSE'))
+    zf.write(f'generic', path.join('base', 'generic'))
+    for f in listdir('generic'):
+        zf.write(f'generic/{f}', path.join('base', 'generic', f))
     print('Created source release: base.zip') 
 

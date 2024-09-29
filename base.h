@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "d84bd46a7bdd510d8f3200717fd066555d8d264f"
+#define BASE_C_VERSION "6b3054b445b67021227f3fae291a6948cac90800"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -1342,12 +1342,6 @@ typedef struct {
     Net_Transport_Protocol proto;
 } Net_Socket;
 
-// TCP Socket
-typedef struct { i64 _handle; } Net_TCP_Socket;
-
-// UDP Socket
-typedef struct { i64 _handle; } Net_UDP_Socket;
-
 static const Net_Socket BAD_SOCKET = {._handle = -1};
 
 // Returns if bind was successful
@@ -1357,39 +1351,39 @@ bool net_bind(Net_Socket sock, Net_Endpoint endpoint);
 Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol proto);
 
 // Send payload to endpoint using socket
-isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to);
+isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to);
 
 // Receive payload from UDP socket, the remote address is written to `remote` if it is not NULL
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote);
+isize net_receive_udp(Net_Socket sock, Bytes buf, Net_Endpoint* remote);
 
 // Connect to endpoint using TCP socket
-bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote);
+bool net_connect_tcp(Net_Socket sock, Net_Endpoint remote);
 
 // Send payload that sock is connected to, returs number of bytes sent
-isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+isize net_send_tcp(Net_Socket sock, Bytes payload);
 
 // Listen to TCP connections on socket
-bool net_listen_tcp(Net_TCP_Socket sock);
+bool net_listen_tcp(Net_Socket sock);
 
 // Close a socket
 bool net_close_socket(Net_Socket sock);
 
 // Cast a generic socket to a UDP socket.
 static inline
-Net_UDP_Socket net_udp_sock(Net_Socket sock){
+Net_Socket net_udp_sock(Net_Socket sock){
 	bool ok = sock.proto == Transport_UDP;
 	debug_assert(ok, "Not a UDP socket.");
-	return (Net_UDP_Socket){
+	return (Net_Socket){
 		._handle = ok ? sock._handle : 0,
 	};
 }
 
 // Cast a generic socket to a TCP socket.
 static inline
-Net_TCP_Socket net_tcp_sock(Net_Socket sock){
+Net_Socket net_tcp_sock(Net_Socket sock){
 	bool ok = sock.proto == Transport_TCP;
 	debug_assert(ok, "Not a TCP socket.");
-	return (Net_TCP_Socket){
+	return (Net_Socket){
 		._handle = ok ? sock._handle : 0,
 	};
 }
@@ -1454,16 +1448,19 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 
 #define NET_TCP_LISTEN_COUNT 8
 
-bool net_listen_tcp(Net_TCP_Socket sock){
+bool net_listen_tcp(Net_Socket sock){
+	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	int status = listen(sock._handle, NET_TCP_LISTEN_COUNT);
 	return status >= 0;
 }
 
-Net_TCP_Socket net_accept_tcp(Net_TCP_Socket sock, Net_Endpoint* end_in){
-	accept
+Net_Socket net_accept_tcp(Net_Socket sock, Net_Endpoint* end_in){
+	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
+	unimplemented();
 }
 
-bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote){
+bool net_connect_tcp(Net_Socket sock, Net_Endpoint remote){
+	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	int status = 0;
 	switch(remote.address.family){
 		case Net_IPv4: {
@@ -1479,7 +1476,8 @@ bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote){
 	return status >= 0;
 }
 
-isize net_send_tcp(Net_TCP_Socket sock, Bytes payload){
+isize net_send_tcp(Net_Socket sock, Bytes payload){
+	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	isize n = send(sock._handle, payload.data, payload.len, 0);
 	return n;
 }
@@ -1501,7 +1499,8 @@ bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
 	return status >= 0;
 }
 
-isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
+isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
+	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
 	switch(to.address.family){
 		case Net_IPv4: {
 			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(to);
@@ -1529,7 +1528,7 @@ isize net_send_udp(Net_UDP_Socket sock, Bytes payload, Net_Endpoint to){
 	return -1;
 }
 
-isize net_receive_udp(Net_UDP_Socket sock, Bytes buf, Net_Endpoint* remote){
+isize net_receive_udp(Net_Socket sock, Bytes buf, Net_Endpoint* remote){
 	alignas(alignof(struct sockaddr)) byte addr_data[64] = {0}; // Enough to store IPv6
 	uint addr_len = 64;
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);

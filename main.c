@@ -10,20 +10,18 @@
 #include "generic/dynamic_array.h"
 
 int main(){
-	Net_Socket os_sock = net_create_socket(Net_IPv6, Transport_TCP);
+	Net_Socket sock = net_create_socket(Net_IPv6, Transport_TCP);
 	Net_Endpoint remote = {
 		.address = IPV4_LOOPBACK_ADDR,
 		.port = 9000
 	};
-
-	Net_TCP_Socket sock = net_tcp_sock(os_sock);
 
 	if(!net_listen_tcp(sock)){
 		panic("Could not listen TCP");
 	}
 
 	while(1){
-		Net_TCP_Socket conn = net_accept_tcp(sock);
+		// Net_TCP_Socket conn = net_accept_tcp(sock, NULL);
 	}
 
 	return 0;
