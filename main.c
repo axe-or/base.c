@@ -10,21 +10,21 @@
 #include "generic/dynamic_array.h"
 
 int main(){
-	Net_Socket sock = net_create_socket(Net_IPv6, Transport_TCP);
+	Net_Socket os_sock = net_create_socket(Net_IPv6, Transport_TCP);
 	Net_Endpoint remote = {
-		.address = {.data = {{0}}, .family = Net_IPv6},
+		.address = IPV4_LOOPBACK_ADDR,
 		.port = 9000
 	};
 
-	if(!net_connect_tcp(net_tcp_sock(sock), remote)){
-		panic("Could not connect to TCP endpoint");
-	}
-	Bytes msg = {
-		.data = (byte*)"Hello",
-		.len = 5,
-	};
+	Net_TCP_Socket sock = net_tcp_sock(os_sock);
 
-	net_send_tcp(net_tcp_sock(sock), msg);
+	if(!net_listen_tcp(sock)){
+		panic("Could not listen TCP");
+	}
+
+	while(1){
+		Net_TCP_Socket conn = net_accept_tcp(sock);
+	}
 
 	return 0;
 }

@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "f7d7077bbcd41798236e5e3caccaacca44e42397"
+#define BASE_C_VERSION "d84bd46a7bdd510d8f3200717fd066555d8d264f"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -1338,8 +1338,8 @@ typedef struct {
 
 // Represents any socket, includes protocol information
 typedef struct {
-    Net_Transport_Protocol proto;
     i64 _handle;
+    Net_Transport_Protocol proto;
 } Net_Socket;
 
 // TCP Socket
@@ -1367,6 +1367,12 @@ bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote);
 
 // Send payload that sock is connected to, returs number of bytes sent
 isize net_send_tcp(Net_TCP_Socket sock, Bytes payload);
+
+// Listen to TCP connections on socket
+bool net_listen_tcp(Net_TCP_Socket sock);
+
+// Close a socket
+bool net_close_socket(Net_Socket sock);
 
 // Cast a generic socket to a UDP socket.
 static inline
@@ -1444,6 +1450,17 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 		swap_bytes(&os_addr.sin6_port);
 	}
 	return os_addr;
+}
+
+#define NET_TCP_LISTEN_COUNT 8
+
+bool net_listen_tcp(Net_TCP_Socket sock){
+	int status = listen(sock._handle, NET_TCP_LISTEN_COUNT);
+	return status >= 0;
+}
+
+Net_TCP_Socket net_accept_tcp(Net_TCP_Socket sock, Net_Endpoint* end_in){
+	accept
 }
 
 bool net_connect_tcp(Net_TCP_Socket sock, Net_Endpoint remote){
@@ -1559,6 +1576,11 @@ Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol p
         .proto = proto,
         ._handle = sock_fd,
     };
+}
+
+bool net_close_socket(Net_Socket sock){
+	int status = close(sock._handle);
+	return status >= 0;
 }
 
 #else
