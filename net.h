@@ -154,8 +154,24 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	return os_addr;
 }
 
-#define NET_TCP_LISTEN_COUNT 8
+bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
+	int status = 0;
+	switch(endpoint.address.family){
+		case Net_IPv4: {
+			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
 
+		case Net_IPv6: {
+			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
+	}
+
+	return status >= 0;
+}
+
+#define NET_TCP_LISTEN_COUNT 8
 bool net_listen_tcp(Net_Socket sock){
 	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	int status = listen(sock._handle, NET_TCP_LISTEN_COUNT);
@@ -190,23 +206,6 @@ isize net_send_tcp(Net_Socket sock, Bytes payload){
 	return n;
 }
 
-bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
-	int status = 0;
-	switch(endpoint.address.family){
-		case Net_IPv4: {
-			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
-			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-		} break;
-
-		case Net_IPv6: {
-			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
-			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-		} break;
-	}
-
-	return status >= 0;
-}
-
 isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
 	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
 	switch(to.address.family){
@@ -236,7 +235,11 @@ isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
 	return -1;
 }
 
+isize net_receive_tcp(Net_Socket sock, Bytes buf){
+}
+
 isize net_receive_udp(Net_Socket sock, Bytes buf, Net_Endpoint* remote){
+	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
 	alignas(alignof(struct sockaddr)) byte addr_data[64] = {0}; // Enough to store IPv6
 	uint addr_len = 64;
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);

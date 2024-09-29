@@ -21,7 +21,7 @@ int main(){
 	}
 
 	while(1){
-		// Net_TCP_Socket conn = net_accept_tcp(sock, NULL);
+		Net_Socket conn = net_accept_tcp(sock, NULL);
 	}
 
 	return 0;

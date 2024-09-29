@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "6b3054b445b67021227f3fae291a6948cac90800"
+#define BASE_C_VERSION "8ecab747c8500a8306f2edd00434ab8f4a4e6451"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -68,10 +68,24 @@ _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
 typedef _Bool bool;
 #endif
 
+
+// Crash if `pred` is false, this is disabled in non-debug builds
+void debug_assert(bool pred, cstring msg);
+
+// Crash if `pred` is false, this is always enabled
+void panic_assert(bool pred, cstring msg);
+
+// Crash the program with a fatal error
+noreturn void panic(char* const msg);
+
+// Crash the program due to unimplemented code paths, this should *only* be used
+// during development
+noreturn void unimplemented();
+
+#ifdef BASE_C_IMPLEMENTATION
 #include <stdio.h>
 #include <stdlib.h>
 
-static inline
 void debug_assert(bool pred, cstring msg){
 	#ifdef NDEBUG
 		(void)pred; (void)msg;
@@ -83,7 +97,6 @@ void debug_assert(bool pred, cstring msg){
 	#endif
 }
 
-static inline
 void panic_assert(bool pred, cstring msg){
 	if(!pred){
 		fprintf(stderr, "Failed assert: %s\n", msg);
@@ -92,18 +105,17 @@ void panic_assert(bool pred, cstring msg){
 }
 
 noreturn
-static inline
 void panic(char* const msg){
 	fprintf(stderr, "Panic: %s\n", msg);
 	abort();
 }
 
 noreturn
-static inline
 void unimplemented(){
-	fprintf(stderr, "Unimplemented\n");
+	fprintf(stderr, "Unimplemented code\n");
 	abort();
 }
+#endif
 
 #define UTF8_RANGE1 ((i32)0x7f)
 #define UTF8_RANGE2 ((i32)0x7ff)
@@ -1446,8 +1458,24 @@ struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	return os_addr;
 }
 
-#define NET_TCP_LISTEN_COUNT 8
+bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
+	int status = 0;
+	switch(endpoint.address.family){
+		case Net_IPv4: {
+			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
 
+		case Net_IPv6: {
+			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
+			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
+		} break;
+	}
+
+	return status >= 0;
+}
+
+#define NET_TCP_LISTEN_COUNT 8
 bool net_listen_tcp(Net_Socket sock){
 	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	int status = listen(sock._handle, NET_TCP_LISTEN_COUNT);
@@ -1482,23 +1510,6 @@ isize net_send_tcp(Net_Socket sock, Bytes payload){
 	return n;
 }
 
-bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
-	int status = 0;
-	switch(endpoint.address.family){
-		case Net_IPv4: {
-			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
-			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-		} break;
-
-		case Net_IPv6: {
-			struct sockaddr_in6 os_endpoint = _unwrap_endpoint_ip6(endpoint);
-			status = bind(sock._handle, (struct sockaddr const *)(&os_endpoint), sizeof(os_endpoint));
-		} break;
-	}
-
-	return status >= 0;
-}
-
 isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
 	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
 	switch(to.address.family){
@@ -1528,7 +1539,11 @@ isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
 	return -1;
 }
 
+isize net_receive_tcp(Net_Socket sock, Bytes buf){
+}
+
 isize net_receive_udp(Net_Socket sock, Bytes buf, Net_Endpoint* remote){
+	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
 	alignas(alignof(struct sockaddr)) byte addr_data[64] = {0}; // Enough to store IPv6
 	uint addr_len = 64;
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);
