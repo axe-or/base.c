@@ -73,6 +73,26 @@ bool container_func(append)(Dyn_Array* arr, T elem){
 	return true;
 }
 
+generic_func
+bool container_func(shrink)(Dyn_Array* arr){
+	return container_func(resize)(arr, arr->len);
+}
+
+generic_func
+bool container_func(remove)(Dyn_Array* arr, isize idx){
+	debug_assert(idx < arr->len && idx >= 0, "Out of bounds removal");
+	if(arr->len <= 0){ return false; }
+
+	mem_copy(&arr->data[idx], &arr->data[idx + 1], (arr->len - idx) * sizeof(T));
+	arr->len -= 1;
+	return true;
+}
+
+generic_func
+bool container_func(insert)(Dyn_Array* arr, isize idx, T elem){
+	unimplemented();
+}
+
 #undef Dyn_Array
 #undef T
 #undef container_name

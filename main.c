@@ -14,8 +14,12 @@ int main(){
 		panic("Failed to init array");
 	}
 	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
-	ia_append(&arr, 69);
-	ia_append(&arr, 420);
-	ia_append(&arr, -200);
+	for(int i = 0; i < 20; i ++) ia_append(&arr, i);
+	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
+	ia_shrink(&arr);
+	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
+	ia_remove(&arr, arr.len - 1);
+	ia_remove(&arr, 16);
+	ia_remove(&arr, 0);
 	printf("len: %ld cap: %ld data: { ", arr.len, arr.cap); for(isize i = 0; i < arr.len; i ++){ printf("%ld ", arr.data[i]); } printf("}\n");
 }
