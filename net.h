@@ -29,6 +29,11 @@ typedef struct {
         .data.ip4 = {127, 0, 0, 1} \
     }
 
+// Big endian u16
+typedef struct {
+	u16 data;
+} Net_Port;
+
 typedef enum {
     Transport_TCP,
     Transport_UDP,
@@ -36,7 +41,7 @@ typedef enum {
 
 typedef struct {
     Net_Address address;
-    u16 port;
+    Net_Port port;
 } Net_Endpoint;
 
 // Handle to an OS socket
@@ -76,26 +81,6 @@ bool net_listen_tcp(Net_Socket sock);
 // Close a socket
 bool net_close_socket(Net_Socket sock);
 
-// Cast a generic socket to a UDP socket.
-static inline
-Net_Socket net_udp_sock(Net_Socket sock){
-	bool ok = sock.proto == Transport_UDP;
-	debug_assert(ok, "Not a UDP socket.");
-	return (Net_Socket){
-		._handle = ok ? sock._handle : 0,
-	};
-}
-
-// Cast a generic socket to a TCP socket.
-static inline
-Net_Socket net_tcp_sock(Net_Socket sock){
-	bool ok = sock.proto == Transport_TCP;
-	debug_assert(ok, "Not a TCP socket.");
-	return (Net_Socket){
-		._handle = ok ? sock._handle : 0,
-	};
-}
-
 static inline
 bool net_socket_ok(Net_Socket s){
     return s._handle != BAD_SOCKET._handle;
@@ -107,6 +92,23 @@ bool net_socket_ok(Net_Socket s){
 
 #include <unistd.h>
 #include <arpa/inet.h>
+
+static inline
+Net_Port net_port_from(u16 val){
+	Net_Port np = {val};
+	if(!arch_is_big_endian()){
+		swap_bytes(&np);
+	}
+	return np;
+}
+
+static inline
+u16 net_port_to_number(Net_Port p){
+	if(!arch_is_big_endian()){
+		swap_bytes(&p);
+	}
+	return p.data;
+}
 
 static inline
 int _unwrap_addr_family(Net_Address_Family family){
@@ -131,31 +133,24 @@ struct sockaddr_in _unwrap_endpoint_ip4(Net_Endpoint addr){
 	struct sockaddr_in os_addr = {0};
 
 	os_addr.sin_family = _unwrap_addr_family(addr.address.family);
-	os_addr.sin_port = addr.port;
+	os_addr.sin_port = addr.port.data;
 	mem_copy(&os_addr.sin_addr.s_addr, addr.address.data.ip4, 4);
-	if(!arch_is_big_endian()){
-		swap_bytes(&os_addr.sin_addr.s_addr);
-		swap_bytes(&os_addr.sin_port);
-	}
+
 	return os_addr;
 }
 
 static inline
 struct sockaddr_in6 _unwrap_endpoint_ip6(Net_Endpoint addr){
 	struct sockaddr_in6 os_addr = {0};
-	os_addr.sin6_port = addr.port;
+	os_addr.sin6_port = addr.port.data;
 	os_addr.sin6_family = _unwrap_addr_family(addr.address.family);
 	mem_copy(&os_addr.sin6_addr, addr.address.data.ip6, 16);
 
-	if(!arch_is_big_endian()){
-		swap_bytes(&os_addr.sin6_addr);
-		swap_bytes(&os_addr.sin6_port);
-	}
 	return os_addr;
 }
 
 bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
-	int status = 0;
+	int status = -1;
 	switch(endpoint.address.family){
 		case Net_IPv4: {
 			struct sockaddr_in os_endpoint = _unwrap_endpoint_ip4(endpoint);
@@ -172,15 +167,27 @@ bool net_bind(Net_Socket sock, Net_Endpoint endpoint){
 }
 
 #define NET_TCP_LISTEN_COUNT 8
+
 bool net_listen_tcp(Net_Socket sock){
 	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
 	int status = listen(sock._handle, NET_TCP_LISTEN_COUNT);
-	return status >= 0;
+	return status == 0;
 }
 
 Net_Socket net_accept_tcp(Net_Socket sock, Net_Endpoint* end_in){
 	debug_assert(sock.proto == Transport_TCP, "Wrong transport protocol");
-	unimplemented();
+
+#define ADDR_LEN (sizeof(struct sockaddr) * (isize)(4))
+	socklen_t addr_len = ADDR_LEN;
+	alignas(alignof(struct sockaddr)) byte addr_data[ADDR_LEN] = {0}; // Enough to store IPv6
+#undef ADDR_LEN
+
+	int newsock = accept(sock._handle, (struct sockaddr*)&addr_data, &addr_len);
+	if(newsock < 0){
+		return BAD_SOCKET;
+	}
+	printf("OK!\n");
+	return (Net_Socket){ ._handle = newsock, .proto = Transport_TCP };
 }
 
 bool net_connect_tcp(Net_Socket sock, Net_Endpoint remote){
@@ -236,35 +243,39 @@ isize net_send_udp(Net_Socket sock, Bytes payload, Net_Endpoint to){
 }
 
 isize net_receive_tcp(Net_Socket sock, Bytes buf){
+	int n = recv(sock._handle, buf.data, buf.len, 0);
+	return n;
 }
 
 isize net_receive_udp(Net_Socket sock, Bytes buf, Net_Endpoint* remote){
 	debug_assert(sock.proto == Transport_UDP, "Wrong transport protocol");
-	alignas(alignof(struct sockaddr)) byte addr_data[64] = {0}; // Enough to store IPv6
+	struct sockaddr_storage addr_data = {0};
 	uint addr_len = 64;
+		printf("b\n");
 	isize n = recvfrom(sock._handle, buf.data, buf.len, 0, (struct sockaddr*)&addr_data, &addr_len);
+		printf("c\n");
 
 	if(remote){
 		if(addr_len == sizeof(struct sockaddr_in)){
 			struct sockaddr_in os_addr = *(struct sockaddr_in *)(&addr_data);
-			if(!arch_is_big_endian()){
-				swap_bytes(&os_addr.sin_addr.s_addr);
-				swap_bytes(&os_addr.sin_port);
-			}
+			// if(!arch_is_big_endian()){
+			// 	swap_bytes(&os_addr.sin_addr.s_addr);
+			// 	swap_bytes(&os_addr.sin_port);
+			// }
 
 			remote->address.family = Net_IPv4;
-			remote->port = os_addr.sin_port;
+			remote->port.data = os_addr.sin_port;
 			mem_copy(&remote->address.data.ip4, &os_addr.sin_addr, 4);
 		}
 		else if(addr_len == sizeof(struct sockaddr_in6)){
 			struct sockaddr_in6 os_addr = *(struct sockaddr_in6 *)(&addr_data);
-			if(!arch_is_big_endian()){
-				swap_bytes(&os_addr.sin6_addr);
-				swap_bytes(&os_addr.sin6_port);
-			}
+			// if(!arch_is_big_endian()){
+			// 	swap_bytes(&os_addr.sin6_addr);
+			// 	swap_bytes(&os_addr.sin6_port);
+			// }
 
 			remote->address.family = Net_IPv6;
-			remote->port = os_addr.sin6_port;
+			remote->port.data = os_addr.sin6_port;
 			mem_copy(&remote->address.data.ip6, &os_addr.sin6_addr, 16);
 		}
 	}
@@ -281,6 +292,13 @@ Net_Socket net_create_socket(Net_Address_Family family, Net_Transport_Protocol p
         return BAD_SOCKET;
     }
     // TODO set REUSE flag
+	int option = 1;
+	int opt_status = setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(int));
+
+	if(opt_status < 0){
+		close(sock_fd);
+		return BAD_SOCKET;
+	}
 
     return (Net_Socket){
         .proto = proto,
