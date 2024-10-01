@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "63f5abf8e23decb2295e45f8f52455399b8a72aa"
+#define BASE_C_VERSION "c91cb58417985558ce8e86c1b92411a25f966c38"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -1249,6 +1249,11 @@ isize file_write(String path, byte const* data, isize n);
 // Append n bytes of data to file at path. Returns number of bytes added
 // (negative means error).
 isize file_append(String path, byte const* data, isize n);
+
+typedef struct {
+	String fullpath;
+	i64 size;
+} File_Info;
 
 #ifdef BASE_C_IMPLEMENTATION
 

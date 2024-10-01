@@ -16,6 +16,11 @@ isize file_write(String path, byte const* data, isize n);
 // (negative means error).
 isize file_append(String path, byte const* data, isize n);
 
+typedef struct {
+	String fullpath;
+	i64 size;
+} File_Info;
+
 #ifdef BASE_C_IMPLEMENTATION
 
 #include <stdio.h>
