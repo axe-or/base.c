@@ -12,7 +12,7 @@ deps = [
     'assert.h', 'utf8.h', 'list.h', 'fnv_hash.h', 'spinlock.h',
     'memory.h', 'io.h',
     'string.h', 'bytes_buffer.h', 'arena_allocator.h',
-    'heap_allocator.h', 'file.h', 'net.h',
+    'heap_allocator.h',
 ]
 
 src_out = []
