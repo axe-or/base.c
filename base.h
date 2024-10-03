@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "ffefd820d0b8e1cf4677441212481f5772a10624"
+#define BASE_C_VERSION "a9318dafbe8b0d7834f1047f36c44bc8a84a8055"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,9 +55,6 @@ void swap_bytes_raw(byte* data, isize len){
 
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
-
-#define defstruct(X) typedef struct X X
-#define defenum(X) typedef enum X X
 
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))

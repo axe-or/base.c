@@ -9,7 +9,33 @@ about that.
 
 The `generic.h` file just contains a couple of macro expansion trickery.
 
-Example (Stack):
+## Boilerplate
+
 ```c
+/* Arg check */
+#if !defined(container_name) || !defined(container_type_param)
+#error "Missing container_name and/or container_type_param"
+#endif
+#if !defined(container_prefix)
+#define container_prefix M_EXP(container_name)
+#endif
+#define container_func(name) M_GLUE(container_prefix, _##name)
+typedef struct container_name container_name;
+#define generic_func static inline
+
+/* Private macros */
+#define Dyn_Array M_EXP(container_name)
+#define T         M_EXP(container_type_param)
+
+
+// Implementation...
+
+#undef Dyn_Array
+#undef T
+#undef container_name
+#undef container_type_param
+#undef container_prefix
+#undef container_func
+#undef generic_func
 ```
 
