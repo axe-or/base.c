@@ -1,11 +1,8 @@
-#define _POSIX_C_SOURCE 199309L
-
 #define BASE_C_IMPLEMENTATION 1
 #include "prelude.h"
 #include "heap_allocator.h"
+#include "command_line_opt.h"
 #include "string.h"
-#include "net.h"
-#include "chrono.h"
 #include <stdio.h>
 
 #define container_name Int_Array
@@ -13,10 +10,11 @@
 #define container_prefix ia
 #include "generic/dynamic_array.h"
 
-int main(){
-	printf("A...");
-	fflush(stdout);
-	time_sleep(100000 * Time_Microsecond);
-	printf("B!\n");
+int main(int argc, char** argv){
+	CLI_Arg args[512];
+	for(int i = 1; i < min(argc, 512); i ++){
+		args[i] = cli_parse_arg(str_from(argv[i]));
+		printf("Type: %d Key: '%.*s' Val: '%.*s'\n", args[i].type, FmtString(args[i].key), FmtString(args[i].value));
+	}
 	return 0;
 }

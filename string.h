@@ -141,12 +141,12 @@ isize str_codepoint_offset(String s, isize n){
 }
 
 // TODO: Handle length in codepoint count
-String str_sub(String s, isize start, isize length){
-	if(start >= s.len || start < 0 || start + length > s.len){ return EMPTY; }
+String str_sub(String s, isize start, isize byte_count){
+	if(start < 0 || byte_count < 0 || (start + byte_count) > s.len){ return EMPTY; }
 
 	String sub = {
 		.data = &s.data[start],
-		.len = length,
+		.len = byte_count,
 	};
 
 	return sub;

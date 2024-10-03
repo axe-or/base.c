@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "fc439ac936e6d6f1b5fe37780353c0da66cab3ad"
+#define BASE_C_VERSION "ffefd820d0b8e1cf4677441212481f5772a10624"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,6 +55,9 @@ void swap_bytes_raw(byte* data, isize len){
 
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
 _Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
+
+#define defstruct(X) typedef struct X X
+#define defenum(X) typedef enum X X
 
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))
@@ -795,12 +798,12 @@ isize str_codepoint_offset(String s, isize n){
 }
 
 // TODO: Handle length in codepoint count
-String str_sub(String s, isize start, isize length){
-	if(start >= s.len || start < 0 || start + length > s.len){ return EMPTY; }
+String str_sub(String s, isize start, isize byte_count){
+	if(start < 0 || byte_count < 0 || (start + byte_count) > s.len){ return EMPTY; }
 
 	String sub = {
 		.data = &s.data[start],
-		.len = length,
+		.len = byte_count,
 	};
 
 	return sub;
