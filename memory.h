@@ -40,42 +40,22 @@ typedef struct {
 	void* data;
 } Mem_Allocator;
 
-static inline
-void mem_set(void* p, byte val, isize nbytes){
-	__builtin_memset(p, val, nbytes);
-}
 
-static inline
-void mem_copy(void* dest, void const * src, isize nbytes){
-	__builtin_memmove(dest, src, nbytes);
-}
+// Set n bytes of p to value.
+void mem_set(void* p, byte val, isize nbytes);
 
-static inline
-int mem_valid_alignment(isize align){
-	return (align & (align - 1)) == 0 && (align != 0);
-}
+// Copy n bytes for source to destination, they may overlap.
+void mem_copy(void* dest, void const * src, isize nbytes);
+
+// Copy n bytes for source to destination, they should not overlap, this tends
+// to be faster then mem_copy
+void mem_copy_no_overlap(void* dest, void const * src, isize nbytes);
 
 // Align p to alignment a, this only works if a is a non-zero power of 2
-static inline
-uintptr align_forward_ptr(uintptr p, uintptr a){
-	debug_assert(mem_valid_alignment(a), "Invalid memory alignment");
-	uintptr mod = p & (a - 1);
-	if(mod > 0){
-		p += (a - mod);
-	}
-	return p;
-}
+uintptr align_forward_ptr(uintptr p, uintptr a);
 
 // Align p to alignment a, this works for any positive non-zero alignment
-static inline
-uintptr align_forward_size(isize p, isize a){
-	debug_assert(a > 0, "Invalid size alignment");
-	isize mod = p % a;
-	if(mod > 0){
-		p += (a - mod);
-	}
-	return p;
-}
+uintptr align_forward_size(isize p, isize a);
 
 // Get capabilities of allocator as a number, you can use bit operators to check it.
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities);
@@ -96,39 +76,7 @@ void mem_free(Mem_Allocator allocator, void* p);
 // Free all pointers owned by allocator
 void mem_free_all(Mem_Allocator allocator);
 
-#ifdef BASE_C_IMPLEMENTATION
-
-i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities){
-	if(capabilities == NULL){ return 0; }
-	allocator.func(allocator.data, Mem_Op_Query, NULL, 0, 0, capabilities);
-	return *capabilities;
+static inline
+bool mem_valid_alignment(isize align){
+	return (align & (align - 1)) == 0 && (align != 0);
 }
-
-void* mem_alloc(Mem_Allocator allocator, isize size, isize align){
-	void* ptr = allocator.func(allocator.data, Mem_Op_Alloc, NULL, size, align, NULL);
-	if(ptr != NULL){
-		mem_set(ptr, 0, size);
-	}
-	return ptr;
-}
-
-void* mem_resize(Mem_Allocator allocator, void* ptr, isize new_size){
-	void* new_ptr = allocator.func(allocator.data, Mem_Op_Resize, ptr, new_size, 0, NULL);
-	return new_ptr;
-}
-
-void mem_free_ex(Mem_Allocator allocator, void* p, isize align){
-	if(p == NULL){ return; }
-	allocator.func(allocator.data, Mem_Op_Free, p, 0, align, NULL);
-}
-
-void mem_free(Mem_Allocator allocator, void* p){
-	mem_free_ex(allocator, p, 0);
-}
-
-void mem_free_all(Mem_Allocator allocator){
-	allocator.func(allocator.data, Mem_Op_Free_All, NULL, 0, 0, NULL);
-}
-
-
-#endif

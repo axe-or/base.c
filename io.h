@@ -29,6 +29,8 @@ typedef enum {
 } IO_Error;
 
 
+// TODO: Use _Generic for better ergonomics
+
 // Read into buffer, returns number of bytes read into buffer. On error returns
 // the negative valued IO_Error code.
 isize io_read(IO_Reader r, byte* buf, isize buflen);
@@ -47,36 +49,3 @@ IO_Reader io_to_reader(IO_Stream s);
 // Cast a stream to a IO writer, in debug mode this uses a query to assert that
 // the stream supports writing
 IO_Writer io_to_writer(IO_Stream s);
-
-#ifdef BASE_C_IMPLEMENTATION
-#include "assert.h"
-
-i8 io_query_stream(IO_Stream s){
-	return s.func(s.impl, IO_Op_Query, NULL, 0);
-}
-
-isize io_read(IO_Reader r, byte* buf, isize buflen){
-	IO_Stream s = r._stream;
-	return s.func(s.impl, IO_Op_Read, buf, buflen);
-}
-
-isize io_write(IO_Writer w, byte const* buf, isize buflen){
-	IO_Stream s = w._stream;
-	return s.func(s.impl, IO_Op_Write, (byte*)(buf), buflen);
-}
-
-IO_Reader io_to_reader(IO_Stream s){
-	i8 cap = io_query_stream(s);
-	debug_assert(cap & IO_Op_Read, "Stream does not support reading.");
-	IO_Reader r = { ._stream = s };
-	return r;
-}
-
-IO_Writer io_to_writer(IO_Stream s){
-	i8 cap = io_query_stream(s);
-	debug_assert(cap & IO_Op_Write, "Stream does not support writing.");
-	IO_Writer w = { ._stream = s };
-	return w;
-}
-
-#endif

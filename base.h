@@ -1,7 +1,7 @@
 #pragma once
 /* Essential definitions. */
 
-#define BASE_C_VERSION "a9318dafbe8b0d7834f1047f36c44bc8a84a8055"
+#define BASE_C_VERSION "592aa33a07a0ba8654d6d6be75791e271669ac97"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -81,41 +81,6 @@ noreturn void panic(char* const msg);
 // Crash the program due to unimplemented code paths, this should *only* be used
 // during development
 noreturn void unimplemented();
-
-#ifdef BASE_C_IMPLEMENTATION
-#include <stdio.h>
-#include <stdlib.h>
-
-void debug_assert(bool pred, cstring msg){
-	#ifdef NDEBUG
-		(void)pred; (void)msg;
-	#else
-	if(!pred){
-		fprintf(stderr, "Failed assert: %s\n", msg);
-		abort();
-	}
-	#endif
-}
-
-void panic_assert(bool pred, cstring msg){
-	if(!pred){
-		fprintf(stderr, "Failed assert: %s\n", msg);
-		abort();
-	}
-}
-
-noreturn
-void panic(char* const msg){
-	fprintf(stderr, "Panic: %s\n", msg);
-	abort();
-}
-
-noreturn
-void unimplemented(){
-	fprintf(stderr, "Unimplemented code\n");
-	abort();
-}
-#endif
 
 #define UTF8_RANGE1 ((i32)0x7f)
 #define UTF8_RANGE2 ((i32)0x7ff)
@@ -354,104 +319,40 @@ void list_init(List_Node* target){
 #define list_foreach_reversed(IterVar, ListHead) \
 	for(List_Node* IterVar = ListHead.prev; IterVar != &ListHead; IterVar = IterVar->prev)
 
-#ifdef BASE_C_IMPLEMENTATION
-
-// Insert new_node between 2 existing nodes
-static void _list_add(List_Node* prev, List_Node* next, List_Node* new_node){
-	new_node->next = next;
-	new_node->prev = prev;
-	if(next != NULL){ next->prev = new_node; }
-	if(prev != NULL){ prev->next = new_node; }
-}
-
-static void _list_del(List_Node* node){
-	List_Node* prev = node->prev;
-	List_Node* next = node->next;
-	if(next != NULL){ next->prev = prev; }
-	if(prev != NULL){ next->prev = next; }
-}
-
-void list_add(List_Node* target, List_Node* new_node){
-	_list_add(target, target->next, new_node);
-}
-
-void list_del(List_Node* node){
-	_list_del(node);
-}
-
-#endif
-
+// Hash data using FNV-1a hash (32-bit)
 i32 hash_fnv32_ex(void const* data, isize len, i32 seed);
 
+// Hash data using FNV-1a hash (64-bit)
 i64 hash_fnv64_ex(void const* data, isize len, i64 seed);
 
+// Hash data using FNV-1a hash (32-bit)
 i32 hash_fnv32(void const* data, isize len);
 
+// Hash data using FNV-1a hash (64-bit)
 i64 hash_fnv64(void const* data, isize len);
-
-#ifdef BASE_C_IMPLEMENTATION
-i32 hash_fnv32_ex(void const* data, isize len, i32 seed){
-	i32 h = seed;
-	byte const* buf = (byte const*)data;
-	for(isize i = 0; i < len; i ++){
-		h = h ^ buf[i];
-		h = h * 0x01000193;
-	}
-	return h;
-}
-
-i64 hash_fnv64_ex(void const* data, isize len, i64 seed){
-	i64 h = seed;
-	byte const* buf = (byte const*)data;
-	for(isize i = 0; i < len; i ++){
-		h = h ^ buf[i];
-		h = h * 0x00000100000001b3;
-	}
-	return h;
-}
-
-i64 hash_fnv64(void const* data, isize len){
-	return hash_fnv64_ex(data, len, (i32)0x811c9dc5);
-}
-
-i32 hash_fnv32(void const* data, isize len){
-	return hash_fnv64_ex(data, len, (i64)0xcbf29ce484222325);
-}
-
-#endif
-
 #include <stdatomic.h>
 
 #define SPINLOCK_LOCKED 1
 #define SPINLOCK_UNLOCKED 0
 
+// The zeroed state of a spinlock is unlocked, to be effective across threads
+// it's important to keep the spinlock outside of the stack and never mark it as
+// a thread_local struct.
 typedef struct {
 	atomic_int _state;
 } Spinlock;
 
+// Enter a busy wait loop until spinlock is acquired(locked)
 void spinlock_acquire(Spinlock* l);
 
+// Try to lock spinlock, if failed, just move on. Returns if lock was locked.
+bool spinlock_try_acquire(Spinlock* l);
+
+// Release(unlock) the spinlock
 void spinlock_release(Spinlock* l);
 
-#define SCOPED_SPINLOCK(LockPtr, Scope) \
+#define spinlock_scoped(LockPtr, Scope) \
 	do { spinlock_acquire(LockPtr); do { Scope } while(0); spinlock_release(LockPtr); } while(0)
-
-#ifdef BASE_C_IMPLEMENTATION
-
-void spinlock_acquire(Spinlock* l){
-	for(;;){
-		if(!atomic_exchange_explicit(&l->_state, SPINLOCK_LOCKED, memory_order_acquire)){
-			break;
-		}
-		/* Busy wait while locked */
-		while(atomic_load_explicit(&l->_state, memory_order_relaxed));
-	}
-}
-
-void spinlock_release(Spinlock* l){
-	atomic_store(&l->_state, SPINLOCK_UNLOCKED);
-}
-#endif
 
 #define New(T_, N_, Al_) mem_alloc((Al_), sizeof(T_) * (N_), alignof(T_))
 
@@ -490,42 +391,21 @@ typedef struct {
 	void* data;
 } Mem_Allocator;
 
-static inline
-void mem_set(void* p, byte val, isize nbytes){
-	__builtin_memset(p, val, nbytes);
-}
+// Set n bytes of p to value.
+void mem_set(void* p, byte val, isize nbytes);
 
-static inline
-void mem_copy(void* dest, void const * src, isize nbytes){
-	__builtin_memmove(dest, src, nbytes);
-}
+// Copy n bytes for source to destination, they may overlap.
+void mem_copy(void* dest, void const * src, isize nbytes);
 
-static inline
-int mem_valid_alignment(isize align){
-	return (align & (align - 1)) == 0 && (align != 0);
-}
+// Copy n bytes for source to destination, they should not overlap, this tends
+// to be faster then mem_copy
+void mem_copy_no_overlap(void* dest, void const * src, isize nbytes);
 
 // Align p to alignment a, this only works if a is a non-zero power of 2
-static inline
-uintptr align_forward_ptr(uintptr p, uintptr a){
-	debug_assert(mem_valid_alignment(a), "Invalid memory alignment");
-	uintptr mod = p & (a - 1);
-	if(mod > 0){
-		p += (a - mod);
-	}
-	return p;
-}
+uintptr align_forward_ptr(uintptr p, uintptr a);
 
 // Align p to alignment a, this works for any positive non-zero alignment
-static inline
-uintptr align_forward_size(isize p, isize a){
-	debug_assert(a > 0, "Invalid size alignment");
-	isize mod = p % a;
-	if(mod > 0){
-		p += (a - mod);
-	}
-	return p;
-}
+uintptr align_forward_size(isize p, isize a);
 
 // Get capabilities of allocator as a number, you can use bit operators to check it.
 i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities);
@@ -546,41 +426,10 @@ void mem_free(Mem_Allocator allocator, void* p);
 // Free all pointers owned by allocator
 void mem_free_all(Mem_Allocator allocator);
 
-#ifdef BASE_C_IMPLEMENTATION
-
-i32 allocator_query_capabilites(Mem_Allocator allocator, i32* capabilities){
-	if(capabilities == NULL){ return 0; }
-	allocator.func(allocator.data, Mem_Op_Query, NULL, 0, 0, capabilities);
-	return *capabilities;
+static inline
+bool mem_valid_alignment(isize align){
+	return (align & (align - 1)) == 0 && (align != 0);
 }
-
-void* mem_alloc(Mem_Allocator allocator, isize size, isize align){
-	void* ptr = allocator.func(allocator.data, Mem_Op_Alloc, NULL, size, align, NULL);
-	if(ptr != NULL){
-		mem_set(ptr, 0, size);
-	}
-	return ptr;
-}
-
-void* mem_resize(Mem_Allocator allocator, void* ptr, isize new_size){
-	void* new_ptr = allocator.func(allocator.data, Mem_Op_Resize, ptr, new_size, 0, NULL);
-	return new_ptr;
-}
-
-void mem_free_ex(Mem_Allocator allocator, void* p, isize align){
-	if(p == NULL){ return; }
-	allocator.func(allocator.data, Mem_Op_Free, p, 0, align, NULL);
-}
-
-void mem_free(Mem_Allocator allocator, void* p){
-	mem_free_ex(allocator, p, 0);
-}
-
-void mem_free_all(Mem_Allocator allocator){
-	allocator.func(allocator.data, Mem_Op_Free_All, NULL, 0, 0, NULL);
-}
-
-#endif
 
 typedef enum {
 	IO_Op_Query = 0,
@@ -608,6 +457,8 @@ typedef enum {
 	IO_Err_Unknown = -127,
 } IO_Error;
 
+// TODO: Use _Generic for better ergonomics
+
 // Read into buffer, returns number of bytes read into buffer. On error returns
 // the negative valued IO_Error code.
 isize io_read(IO_Reader r, byte* buf, isize buflen);
@@ -626,38 +477,6 @@ IO_Reader io_to_reader(IO_Stream s);
 // Cast a stream to a IO writer, in debug mode this uses a query to assert that
 // the stream supports writing
 IO_Writer io_to_writer(IO_Stream s);
-
-#ifdef BASE_C_IMPLEMENTATION
-
-i8 io_query_stream(IO_Stream s){
-	return s.func(s.impl, IO_Op_Query, NULL, 0);
-}
-
-isize io_read(IO_Reader r, byte* buf, isize buflen){
-	IO_Stream s = r._stream;
-	return s.func(s.impl, IO_Op_Read, buf, buflen);
-}
-
-isize io_write(IO_Writer w, byte const* buf, isize buflen){
-	IO_Stream s = w._stream;
-	return s.func(s.impl, IO_Op_Write, (byte*)(buf), buflen);
-}
-
-IO_Reader io_to_reader(IO_Stream s){
-	i8 cap = io_query_stream(s);
-	debug_assert(cap & IO_Op_Read, "Stream does not support reading.");
-	IO_Reader r = { ._stream = s };
-	return r;
-}
-
-IO_Writer io_to_writer(IO_Stream s){
-	i8 cap = io_query_stream(s);
-	debug_assert(cap & IO_Op_Write, "Stream does not support writing.");
-	IO_Writer w = { ._stream = s };
-	return w;
-}
-
-#endif
 
 // Helper to use with printf "%.*s"
 #define FmtString(str_) (int)((str_).len), (str_).data
@@ -725,224 +544,20 @@ UTF8_Iterator str_iterator_reversed(String s);
 // Is string empty?
 bool str_empty(String s);
 
-#ifdef BASE_C_IMPLEMENTATION
+typedef enum {
+	CLI_Flag_None = 0,
+	CLI_Flag_Toggle = 1,
+	CLI_Flag_Key_Value = 2,
+} CLI_Flag_Type;
 
-static const String EMPTY = {0};
+typedef struct {
+	String value;
+	String key;
+	CLI_Flag_Type type;
+} CLI_Arg;
 
-bool str_empty(String s){
-	return s.len == 0 || s.data == NULL;
-}
-
-String str_from(cstring data){
-	String s = {
-		.data = (byte const *)data,
-		.len = cstring_len(data),
-	};
-	return s;
-}
-
-String str_from_bytes(byte const* data, isize length){
-	String s = {
-		.data = (byte const *)data,
-		.len = length,
-	};
-	return s;
-}
-
-String str_concat(String a, String b, Mem_Allocator allocator){
-	byte* data = New(byte, a.len + b.len, allocator);
-	String s = {0};
-	if(data != NULL){
-		mem_copy(&data[0], a.data, a.len);
-		mem_copy(&data[a.len], b.data, b.len);
-		s.data = data;
-		s.len = a.len + b.len;
-	}
-	return s;
-}
-
-String str_from_range(cstring data, isize start, isize length){
-	String s = {
-		.data = (byte const *)&data[start],
-		.len = length,
-	};
-	return s;
-}
-
-isize str_codepoint_count(String s){
-	UTF8_Iterator it = str_iterator(s);
-
-	isize count = 0;
-	Codepoint c; i8 len;
-	while(utf8_iter_next(&it, &c, &len)){
-		count += 1;
-	}
-	return count;
-}
-
-isize str_codepoint_offset(String s, isize n){
-	UTF8_Iterator it = str_iterator(s);
-
-	isize acc = 0;
-
-	Codepoint c; i8 len;
-	do {
-		if(acc == n){ break; }
-		acc += 1;
-	} while(utf8_iter_next(&it, &c, &len));
-
-	return it.current;
-}
-
-// TODO: Handle length in codepoint count
-String str_sub(String s, isize start, isize byte_count){
-	if(start < 0 || byte_count < 0 || (start + byte_count) > s.len){ return EMPTY; }
-
-	String sub = {
-		.data = &s.data[start],
-		.len = byte_count,
-	};
-
-	return sub;
-}
-
-String str_clone(String s, Mem_Allocator allocator){
-	char* mem = New(char, s.len, allocator);
-	if(mem == NULL){ return EMPTY; }
-	return (String){
-		.data = (byte const *)mem,
-		.len = s.len,
-	};
-}
-
-bool str_eq(String a, String b){
-	if(a.len != b.len){ return false; }
-
-	for(isize i = 0; i < a.len; i += 1){
-		if(a.data[i] != b.data[i]){ return false; }
-	}
-
-	return true;
-}
-
-UTF8_Iterator str_iterator(String s){
-	return (UTF8_Iterator){
-		.current = 0,
-		.data_length = s.len,
-		.data = s.data,
-	};
-}
-
-UTF8_Iterator str_iterator_reversed(String s){
-	return (UTF8_Iterator){
-		.current = s.len,
-		.data_length = s.len,
-		.data = s.data,
-	};
-}
-
-void str_destroy(String s, Mem_Allocator allocator){
-	mem_free(allocator, (void*)s.data);
-}
-
-#define MAX_CUTSET_LEN 64
-
-String str_trim(String s, String cutset){
-	String st = str_trim_leading(str_trim_trailing(s, cutset), cutset);
-	return st;
-}
-
-String str_trim_leading(String s, String cutset){
-	debug_assert(cutset.len <= MAX_CUTSET_LEN, "Cutset string exceeds MAX_CUTSET_LEN");
-
-	Codepoint set[MAX_CUTSET_LEN] = {0};
-	isize set_len = 0;
-	isize cut_after = 0;
-
-	decode_cutset: {
-		Codepoint c; i8 n;
-		UTF8_Iterator iter = str_iterator(cutset);
-
-		isize i = 0;
-		while(utf8_iter_next(&iter, &c, &n) && i < MAX_CUTSET_LEN){
-			set[i] = c;
-			i += 1;
-		}
-		set_len = i;
-	}
-
-	strip_cutset: {
-		Codepoint c; i8 n;
-		UTF8_Iterator iter = str_iterator(s);
-
-		while(utf8_iter_next(&iter, &c, &n)){
-			bool to_be_cut = false;
-			for(isize i = 0; i < set_len; i += 1){
-				if(set[i] == c){
-					to_be_cut = true;
-					break;
-				}
-			}
-
-			if(to_be_cut){
-				cut_after += n;
-			}
-			else {
-				break; // Reached first Codepoint that isn't in cutset
-			}
-
-		}
-	}
-
-	return str_sub(s, cut_after, s.len - cut_after);
-}
-
-String str_trim_trailing(String s, String cutset){
-	debug_assert(cutset.len <= MAX_CUTSET_LEN, "Cutset string exceeds MAX_CUTSET_LEN");
-
-	Codepoint set[MAX_CUTSET_LEN] = {0};
-	isize set_len = 0;
-	isize cut_until = s.len;
-
-	decode_cutset: {
-		Codepoint c; i8 n;
-		UTF8_Iterator iter = str_iterator(cutset);
-
-		isize i = 0;
-		while(utf8_iter_next(&iter, &c, &n) && i < MAX_CUTSET_LEN){
-			set[i] = c;
-			i += 1;
-		}
-		set_len = i;
-	}
-
-	strip_cutset: {
-		Codepoint c; i8 n;
-		UTF8_Iterator iter = str_iterator_reversed(s);
-
-		while(utf8_iter_prev(&iter, &c, &n)){
-			bool to_be_cut = false;
-			for(isize i = 0; i < set_len; i += 1){
-				if(set[i] == c){
-					to_be_cut = true;
-					break;
-				}
-			}
-
-			if(to_be_cut){
-				cut_until -= n;
-			}
-			else {
-				break; // Reached first Codepoint that isn't in cutset
-			}
-
-		}
-	}
-
-	return str_sub(s, 0, cut_until);
-}
-
-#endif
+// Parse a CLI argument, accepts flags of the form `-key:val` or just `-flag`
+CLI_Arg cli_parse_arg(String arg);
 
 typedef struct {
 	byte* data;
@@ -952,7 +567,7 @@ typedef struct {
 	Mem_Allocator allocator;
 } Bytes_Buffer;
 
-// Init a builder with a capacity, returns success status
+// Init a buffer with a capacity, returns success status
 bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap);
 
 // Get remaining free size given the current capacity
@@ -961,13 +576,13 @@ isize buffer_remaining(Bytes_Buffer* bb){
 	return bb->cap - (bb->last_read + bb->len);
 }
 
-// Destroy a builder
+// Destroy a buffer
 void buffer_destroy(Bytes_Buffer* bb);
 
-// Resize builder to have specified capacity, returns success status.
+// Resize buffer to have specified capacity, returns success status.
 bool buffer_resize(Bytes_Buffer* bb, isize new_size);
 
-// Resets builder's data, does not de-allocate
+// Resets buffer's data, does not de-allocate
 void buffer_reset(Bytes_Buffer* bb);
 
 // Clear buffer's read bytes, this shifts the buffer's memory back to its base.
@@ -976,112 +591,14 @@ void buffer_clean_read_bytes(Bytes_Buffer* bb);
 // Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
 isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size);
 
-// Push bytes to the end of builder, returns success status
+// Push bytes to the end of buffer, returns success status
 bool buffer_write(Bytes_Buffer* bb, byte const* b, isize len);
 
 // Current unread bytes, this pointer becomes invalid as soon as the buffer is modified.
 byte* buffer_bytes(Bytes_Buffer* bb);
 
+// Get bytes buffer as a IO stream
 IO_Stream buffer_stream(Bytes_Buffer* bb);
-
-#ifdef BASE_C_IMPLEMENTATION
-
-static inline
-isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){
-	Bytes_Buffer* bb = (Bytes_Buffer*)(impl);
-	switch(op){
-	case IO_Op_Query: {
-		return IO_Op_Read | IO_Op_Write;
-	} break;
-
-	case IO_Op_Read: {
-		return buffer_read(bb, data, len);
-	} break;
-
-	case IO_Op_Write: {
-		return buffer_write(bb, data, len);
-	} break;
-	}
-
-	return 0;
-}
-
-bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap){
-	bb->allocator = allocator;
-	bb->data = New(byte, initial_cap, allocator);
-
-	if(bb->data != NULL){
-		bb->cap = initial_cap;
-		bb->len = 0;
-		bb->last_read = 0;
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void buffer_destroy(Bytes_Buffer* bb){
-	mem_free(bb->allocator, bb->data);
-	bb->data = 0;
-}
-
-// Clear buffer's read bytes, this shifts the buffer's memory back to its base.
-void buffer_clean_read_bytes(Bytes_Buffer* bb){
-	byte* data = buffer_bytes(bb);
-	mem_copy(bb->data, data, bb->len);
-	bb->last_read = 0;
-}
-
-byte* buffer_bytes(Bytes_Buffer* bb){
-	return &bb->data[bb->last_read];
-}
-
-// Read bytes from the buffer, pushing its `read` pointer forward. Returns number of bytes read.
-isize buffer_read(Bytes_Buffer* bb, byte* dest, isize size){
-	if(bb->len == 0){ return 0; }
-	isize n = min(size, bb->len);
-	mem_copy(dest, &bb->data[bb->last_read], n);
-	bb->last_read += n;
-	bb->len -= n;
-	return n;
-}
-
-bool buffer_write(Bytes_Buffer* bb, byte const* bytes, isize len){
-	if(bb->len + bb->last_read + len > bb->cap){
-		bool status = buffer_resize(bb, bb->cap * 2);
-		if(!status){ return false; }
-	}
-	mem_copy(&bb->data[bb->last_read + bb->len], bytes, len);
-	bb->len += len;
-	return true;
-}
-
-bool buffer_resize(Bytes_Buffer* bb, isize new_size){
-	byte* new_data = New(byte, new_size, bb->allocator);
-	if(new_data == NULL){ return false; }
-
-	mem_copy(new_data, bb->data, min(new_size, bb->len));
-	mem_free(bb->allocator, bb->data);
-	bb->data = new_data;
-	bb->cap = new_size;
-
-	return true;
-}
-
-void buffer_reset(Bytes_Buffer* bb){
-	bb->len = 0;
-	mem_set(bb->data, 0, bb->cap);
-}
-
-IO_Stream buffer_stream(Bytes_Buffer* bb){
-	IO_Stream s = {
-		.impl = bb,
-		.func = buffer_io_func,
-	};
-	return s;
-}
-
-#endif
 
 typedef struct {
 	isize offset;
@@ -1089,151 +606,16 @@ typedef struct {
 	byte* data;
 } Mem_Arena;
 
+// Initialize a memory arena with a buffer
 void arena_init(Mem_Arena* a, byte* data, isize len);
+
+// Deinit the arena
 void arena_destroy(Mem_Arena *a);
+
+// Get arena as a conforming instance to the allocator interface
 Mem_Allocator arena_allocator(Mem_Arena* a);
 
-#ifdef BASE_C_IMPLEMENTATION
-
-static
-uintptr arena_required_mem(uintptr cur, isize nbytes, isize align){
-	debug_assert(mem_valid_alignment(align), "Alignment must be a power of 2");
-	uintptr_t aligned  = align_forward_ptr(cur, align);
-	uintptr_t padding  = (uintptr)(aligned - cur);
-	uintptr_t required = padding + nbytes;
-	return required;
-}
-
-static
-void *arena_alloc(Mem_Arena* a, isize size, isize align){
-	uintptr base = (uintptr)a->data;
-	uintptr current = (uintptr)base + (uintptr)a->offset;
-
-	uintptr available = (uintptr)a->capacity - (current - base);
-	uintptr required = arena_required_mem(current, size, align);
-
-	if(required > available){
-		return NULL;
-	}
-
-	a->offset += required;
-	void* allocation = &a->data[a->offset - size];
-	return allocation;
-}
-
-static
-void arena_free_all(Mem_Arena* a){
-	a->offset = 0;
-}
-
-static
-void* arena_allocator_func(
-	void* impl,
-	enum Allocator_Op op,
-	void* old_ptr,
-	isize size,
-	isize align,
-	i32* capabilities)
-{
-	Mem_Arena* a = impl;
-	(void)old_ptr;
-
-	switch(op){
-		case Mem_Op_Alloc: {
-			return arena_alloc(a, size, align);
-		} break;
-
-		case Mem_Op_Free_All: {
-			arena_free_all(a);
-		} break;
-
-		case Mem_Op_Resize: {} break;
-
-		case Mem_Op_Free: {} break;
-
-		case Mem_Op_Query: {
-			*capabilities = Allocator_Alloc_Any | Allocator_Free_All | Allocator_Align_Any;
-		} break;
-	}
-
-	return NULL;
-}
-
-Mem_Allocator arena_allocator(Mem_Arena* a){
-	Mem_Allocator allocator = {
-		.data = a,
-		.func = arena_allocator_func,
-	};
-	return allocator;
-}
-
-void arena_init(Mem_Arena* a, byte* data, isize len){
-	a->capacity = len;
-	a->data = data;
-	a->offset = 0;
-}
-
-void arena_destroy(Mem_Arena* a){
-	arena_free_all(a);
-	a->capacity = 0;
-	a->data = NULL;
-}
-#endif
-
-
+// Get the system's heap allocator, this will typically be LibC's but could also
+// be a custom one or a 3rd party one like mimalloc.
 Mem_Allocator heap_allocator();
 
-#ifdef BASE_C_IMPLEMENTATION
-#include <stdlib.h>
-
-static
-void* heap_alloc(isize nbytes, isize align){
-	void* data = malloc(nbytes);
-	uintptr aligned = align_forward_ptr((uintptr)data, (uintptr)align);
-	if(aligned == (uintptr)data){
-		return data;
-	} else {
-		debug_assert(false, "Could not allocate memory with proper alignment");
-		free(data);
-		return NULL;
-	}
-}
-
-static
-void* heap_allocator_func(
-	void* impl,
-	enum Allocator_Op op,
-	void* old_ptr,
-	isize size, isize align,
-	i32* capabilities
-){
-	(void)impl;
-
-	switch(op){
-		case Mem_Op_Alloc: {
-			return heap_alloc(size, align);
-		} break;
-
-		case Mem_Op_Free: {
-			free(old_ptr);
-		} break;
-
-		case Mem_Op_Resize: {} break;
-
-		case Mem_Op_Free_All: {} break;
-
-		case Mem_Op_Query: {
-			*capabilities = Allocator_Alloc_Any | Allocator_Free_Any;
-		} break;
-	}
-
-	return NULL;
-}
-
-Mem_Allocator heap_allocator(){
-	return (Mem_Allocator){
-		.func = heap_allocator_func,
-		.data = NULL,
-	};
-}
-#endif
