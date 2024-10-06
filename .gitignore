@@ -4,3 +4,5 @@
 *.lib
 *.zip
 *.tar.gz
+bin
+.ninja*

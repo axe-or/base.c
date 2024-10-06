@@ -5,10 +5,10 @@
 #include "string.h"
 #include <stdio.h>
 
-#define container_name Int_Array
-#define container_type_param i64
-#define container_prefix ia
-#include "generic/dynamic_array.h"
+// #define container_name Int_Array
+// #define container_type_param i64
+// #define container_prefix ia
+// #include "generic/dynamic_array.h"
 
 int main(int argc, char** argv){
 	CLI_Arg args[512];
