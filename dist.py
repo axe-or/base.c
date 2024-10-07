@@ -1,8 +1,5 @@
-import subprocess as sb
-import multiprocessing as mp
 from os import listdir, path, mkdir
-from platform import system
-from shutil import copy as file_copy, disk_usage
+from shutil import copy as file_copy
 
 def main():
     sources = glob_extension('src', '.c', exclude=['main.c', 'base.c'])
