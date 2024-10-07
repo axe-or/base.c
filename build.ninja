@@ -1,5 +1,6 @@
-cc = gcc
-linker = gcc
+# Auto generated file by ninja.py
+cc = musl-gcc
+linker = musl-gcc
 cflags = -I. -O2 -Wall -Wextra -fPIC -Wno-unused-label
 ldflags = -static
 ignoreflags = -Wno-unused-label

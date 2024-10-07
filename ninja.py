@@ -6,8 +6,8 @@ RULES = {
 }
 
 VALUES = {
-    'cc': 'gcc',
-    'linker': 'gcc',
+    'cc': 'musl-gcc',
+    'linker': 'musl-gcc',
     'cflags': '-I. -O2 -Wall -Wextra -fPIC',
     'ldflags': '-static',
     'ignoreflags': '-Wno-unused-label',
@@ -35,6 +35,7 @@ def generate():
     lines.append(build(executable, 'link', 'main.c ' + ' '.join(objects), headers))
 
     with open('build.ninja', 'w') as f:
+        lines.insert(0, '# Auto generated file by ninja.py')
         n = f.write('\n'.join(lines) + '\n\n')
         print(f'Wrote {n}B to build.ninja')
 
