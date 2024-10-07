@@ -9,13 +9,14 @@ def main():
     headers = glob_extension('src', '.h')
 
     data = ['/* Single compilation unit for whole library */']
+    sources.sort()
     for src in sources:
         with open(src, 'r') as f:
             data.append(f'/* File: {src} */')
             data.append(f.read())
     data = '\n'.join(data) + '\n'
 
-    DIR = 'base'
+    DIR = 'dist'
     try:
         mkdir(DIR)
     except FileExistsError:
