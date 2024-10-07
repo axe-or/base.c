@@ -1,5 +1,6 @@
 from os import listdir, path, mkdir
 from shutil import copy as file_copy
+from zipfile import ZIP_DEFLATED, ZipFile
 
 def main():
     sources = glob_extension('src', '.c', exclude=['main.c', 'base.c'])
@@ -13,7 +14,7 @@ def main():
             data.append(f.read())
     data = '\n'.join(data) + '\n'
 
-    DIR = 'dist'
+    DIR = 'base'
     try:
         mkdir(DIR)
     except FileExistsError:
@@ -25,6 +26,14 @@ def main():
 
     for header in headers:
         file_copy(header, DIR)
+    file_copy('LICENSE', DIR)
+
+    with ZipFile('base.zip', 'w', compression=ZIP_DEFLATED, compresslevel=9) as zf:
+        zf.mkdir(DIR)
+        for header in listdir(DIR):
+            zf.write(path.join(DIR, header))
+    print(f'Created base.zip ({path.getsize("base.zip") // 1024}KiB)')
+
 
 def glob_extension(dirpath: str, ext: str, exclude = None):
     res = []
