@@ -1,6 +1,7 @@
 # Auto generated file by ninja.py
 cc = musl-gcc
 linker = musl-gcc
+ar = ar
 cflags = -I. -O2 -Wall -Wextra -fPIC -Wno-unused-label
 ldflags = -static
 ignoreflags = -Wno-unused-label
@@ -9,6 +10,8 @@ rule compile
   command = $cc -o $out $cflags -c $in
 rule link
   command = $linker -o $out $ldflags $in
+rule static-lib
+  command = $ar rcs $out $in
 
 build bin/testing.o: compile testing.c | string.h list.h spinlock.h testing.h assert.h prelude.h io.h heap_allocator.h fnv_hash.h memory.h command_line_opt.h utf8.h arena_allocator.h bytes_buffer.h
 build bin/utf8.o: compile utf8.c | string.h list.h spinlock.h testing.h assert.h prelude.h io.h heap_allocator.h fnv_hash.h memory.h command_line_opt.h utf8.h arena_allocator.h bytes_buffer.h
@@ -24,4 +27,5 @@ build bin/bytes_buffer.o: compile bytes_buffer.c | string.h list.h spinlock.h te
 build bin/io.o: compile io.c | string.h list.h spinlock.h testing.h assert.h prelude.h io.h heap_allocator.h fnv_hash.h memory.h command_line_opt.h utf8.h arena_allocator.h bytes_buffer.h
 build bin/arena_allocator.o: compile arena_allocator.c | string.h list.h spinlock.h testing.h assert.h prelude.h io.h heap_allocator.h fnv_hash.h memory.h command_line_opt.h utf8.h arena_allocator.h bytes_buffer.h
 build base.bin: link main.c bin/testing.o bin/utf8.o bin/assert.o bin/memory.o bin/list.o bin/heap_allocator.o bin/command_line_opt.o bin/string.o bin/spinlock.o bin/fnv_hash.o bin/bytes_buffer.o bin/io.o bin/arena_allocator.o | string.h list.h spinlock.h testing.h assert.h prelude.h io.h heap_allocator.h fnv_hash.h memory.h command_line_opt.h utf8.h arena_allocator.h bytes_buffer.h
+build base.a: static-lib bin/testing.o bin/utf8.o bin/assert.o bin/memory.o bin/list.o bin/heap_allocator.o bin/command_line_opt.o bin/string.o bin/spinlock.o bin/fnv_hash.o bin/bytes_buffer.o bin/io.o bin/arena_allocator.o
 

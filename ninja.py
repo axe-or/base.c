@@ -3,11 +3,13 @@ from os import listdir, path
 RULES = {
     'compile': '$cc -o $out $cflags -c $in',
     'link': '$linker -o $out $ldflags $in',
+    'static-lib': '$ar rcs $out $in',
 }
 
 VALUES = {
     'cc': 'musl-gcc',
     'linker': 'musl-gcc',
+    'ar': 'ar',
     'cflags': '-I. -O2 -Wall -Wextra -fPIC',
     'ldflags': '-static',
     'ignoreflags': '-Wno-unused-label',
@@ -33,6 +35,7 @@ def generate():
     for i, source in enumerate(sources):
         lines.append(build(objects[i], 'compile', source, headers))
     lines.append(build(executable, 'link', 'main.c ' + ' '.join(objects), headers))
+    lines.append(build('bin/base.a', 'static-lib', ' '.join(objects)))
 
     with open('build.ninja', 'w') as f:
         lines.insert(0, '# Auto generated file by ninja.py')
