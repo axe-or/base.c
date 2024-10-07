@@ -1,4 +1,5 @@
 from os import listdir, path
+from zipfile import ZipFile, ZIP_DEFLATED
 
 RULES = {
     'compile': '$cc -o $out $cflags -c $in',
@@ -18,7 +19,7 @@ VALUES = {
 def generate():
     headers = glob_extension('.', '.h', exclude=['base.h'])
     sources = glob_extension('.', '.c', exclude=['main.c'])
-    objects = list(map(lambda s: path.join('bin', s.removesuffix('.c') + '.o'), sources))
+    objects = list(map(lambda s: path.join('out', s.removesuffix('.c') + '.o'), sources))
     executable = 'base.bin'
 
     # Ninja source
@@ -34,8 +35,9 @@ def generate():
     lines.append('')
     for i, source in enumerate(sources):
         lines.append(build(objects[i], 'compile', source, headers))
+
     lines.append(build(executable, 'link', 'main.c ' + ' '.join(objects), headers))
-    lines.append(build('bin/base.a', 'static-lib', ' '.join(objects)))
+    lines.append(build('out/base.a', 'static-lib', ' '.join(objects)))
 
     with open('build.ninja', 'w') as f:
         lines.insert(0, '# Auto generated file by ninja.py')
