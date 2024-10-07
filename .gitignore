@@ -6,3 +6,4 @@
 *.tar.gz
 bin
 .ninja*
+dist
