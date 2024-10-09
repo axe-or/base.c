@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef uint8_t byte;
@@ -63,18 +64,47 @@ void _base64_encode_cluster(byte in[3], byte out[4]){
 }
 
 static inline
-void decode_cluster(byte in[4], byte out[3]){
+bool decode_cluster(byte in[4], byte out[3]){
 	byte t[4] = {0};
-	print_bytes("IN", in, 4);
+	// print_bytes("IN", in, 4);
 	t[0] = rev_dict[in[0]];
 	t[1] = rev_dict[in[1]];
 	t[2] = rev_dict[in[2]];
 	t[3] = rev_dict[in[3]];
 
+	bool ok = (t[0] != 0xff) && (t[1] != 0xff) && (t[2] != 0xff) && (t[3] != 0xff);
+
 	out[0] = (t[0] << 2) | (t[1] >> 4);
 	out[1] = ((t[1] & 15) << 4) | (t[2] >> 2);
 	out[2] = ((t[2] & 3) << 6) | t[3];
+	return ok;
 }
+
+
+size_t decode(byte const* data, size_t datalen, byte* outbuf, size_t outlen){
+	if(datalen < 4){ return 0; }
+	int padding = (data[datalen - 2] == '=') + (data[datalen - 1] == '=');
+	size_t decoded = 0;
+
+	size_t decoded_groups = 0;
+	size_t max_groups = outlen / 3;
+
+	for(size_t i = 4 - 1; i < datalen; i += 4){
+		byte bytes_in[4] = {0};
+		byte bytes_out[3] = {0};
+		mem_copy(bytes_in, &data[i - 3], 4);
+		if(decode_cluster(bytes_in, bytes_out)){
+			mem_copy(&outbuf[decoded_groups * 3], bytes_out, 3);
+			decoded_groups += 1;
+		} else {
+			return decoded_groups * 3; // Shit gon wrong
+		}
+
+	}
+
+	return decoded_groups * 3;
+}
+
 
 size_t base64_encode(byte const* data, size_t datalen, byte* outbuf, size_t outlen){
 	int mod = datalen % 3;
@@ -83,7 +113,7 @@ size_t base64_encode(byte const* data, size_t datalen, byte* outbuf, size_t outl
 	size_t encoded_groups = 0;
 	size_t max_groups = outlen / 4;
 
-	for(size_t i = 2; i < datalen; i += 3){
+	for(size_t i = 3 - 1; i < datalen; i += 3){
 		byte bytes_in[3] = {0};
 		byte bytes_out[4] = {0};
 
@@ -96,7 +126,7 @@ size_t base64_encode(byte const* data, size_t datalen, byte* outbuf, size_t outl
 		}
 	}
 
-	/* Decode remaining */
+	/* Encode remaining */
 	if(mod != 0){
 		byte bytes_out[4] = {0};
 		byte bytes_in[3] = {0};
@@ -119,24 +149,18 @@ size_t base64_encode(byte const* data, size_t datalen, byte* outbuf, size_t outl
 
 
 int main(){
-	char const* msg = "Pog";
+	char const* msg = "Hello";
 
 	byte encoded[128] = {0};
 	size_t n = base64_encode((byte*)msg, __builtin_strlen(msg), encoded, sizeof(encoded) - 1);
 	print_bytes("msg", msg, __builtin_strlen(msg));
 	printf("%s -> [%zu] %s\n", msg, n, encoded);
 
-	byte cl[4];
-	mem_copy(cl, encoded, 4);
+	byte decoded[128] = {0};
 
-	byte dec[3];
-	decode_cluster(cl, dec);
-	// print_bytes("cl", cl, sizeof(cl));
-
-	// print_bytes("dec", dec, sizeof(dec));
-	printf("dec: %.3s\n", dec);
-
-	// printf("%c :: %02x\n", 'T', rev_dict['T']);
+	n = decode(encoded, n, decoded, sizeof(decoded) - 1);
+	print_bytes("dec", decoded, n);
+	printf("%s\n", decoded);
 
 	return 0;
 }
