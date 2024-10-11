@@ -2,16 +2,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 typedef uint8_t byte;
 typedef uint32_t u32;
 
 #define print_bytes(prefix, ptr, n) do { \
-	printf("%s: ", prefix); \
+	printf("%s:\n  ", prefix); \
 	byte* _ptr = ((byte*)ptr); \
 	for(int _b_counter = 0; _b_counter < n; _b_counter++){ \
 		printf("%02x ", (int)_ptr[_b_counter]); \
-	} printf("\n"); } while(0);
+	} printf("\n  "); \
+	for(int _b_counter = 0; _b_counter < n; _b_counter++){ \
+		printf("%c  ", (char)_ptr[_b_counter]); \
+	} printf("\n"); \
+} while(0);
 
 static void* mem_copy(void* dest, void const* src, size_t n){
 	return __builtin_memmove(dest, src, n);
@@ -63,46 +68,71 @@ void _base64_encode_cluster(byte in[3], byte out[4]){
 	out[3] = dict[(n >> 0)  & 63];
 }
 
+
+#define assert(pred) do { \
+	if(!(pred)){ \
+		fprintf(stderr, "(%s:%d) Assertion failed: %s\n", __FILE__, __LINE__, #pred); abort(); \
+	} \
+} while (0);
+
 static inline
 bool decode_cluster(byte in[4], byte out[3]){
 	byte t[4] = {0};
-	// print_bytes("IN", in, 4);
 	t[0] = rev_dict[in[0]];
 	t[1] = rev_dict[in[1]];
 	t[2] = rev_dict[in[2]];
 	t[3] = rev_dict[in[3]];
 
-	bool ok = (t[0] != 0xff) && (t[1] != 0xff) && (t[2] != 0xff) && (t[3] != 0xff);
+	// assert(t[0] != 0xff);
+	// assert(t[1] != 0xff);
+	// assert(t[2] != 0xff);
+	// assert(t[3] != 0xff);
 
 	out[0] = (t[0] << 2) | (t[1] >> 4);
 	out[1] = ((t[1] & 15) << 4) | (t[2] >> 2);
 	out[2] = ((t[2] & 3) << 6) | t[3];
-	return ok;
+	return true;
 }
-
 
 size_t decode(byte const* data, size_t datalen, byte* outbuf, size_t outlen){
 	if(datalen < 4){ return 0; }
 	int padding = (data[datalen - 2] == '=') + (data[datalen - 1] == '=');
+	size_t actual_len = datalen - padding;
 	size_t decoded = 0;
 
 	size_t decoded_groups = 0;
 	size_t max_groups = outlen / 3;
 
-	for(size_t i = 4 - 1; i < datalen; i += 4){
+	for(size_t i = 4 - 1; i < actual_len; i += 4){
 		byte bytes_in[4] = {0};
 		byte bytes_out[3] = {0};
 		mem_copy(bytes_in, &data[i - 3], 4);
+
 		if(decode_cluster(bytes_in, bytes_out)){
+		print_bytes("IN", bytes_in, 4);
+		print_bytes("OUT", bytes_out, 4);
 			mem_copy(&outbuf[decoded_groups * 3], bytes_out, 3);
 			decoded_groups += 1;
 		} else {
 			return decoded_groups * 3; // Shit gon wrong
 		}
-
 	}
 
-	return decoded_groups * 3;
+	if(padding != 0){
+		// byte bytes_in[4] = {0};
+		// byte bytes_out[3] = {0};
+		// mem_copy(bytes_in, &data[datalen - 4], 4);
+		// print_bytes("IN", bytes_in, 4);
+		//
+		// if(decode_cluster(bytes_in, bytes_out)){
+		// 	mem_copy(&outbuf[decoded_groups * 3], bytes_out, 4 - padding);
+		// 	decoded_groups += 1;
+		// } else {
+		// 	return decoded_groups * 3; // Shit gon wrong
+		// }
+	}
+
+	return (decoded_groups * 3) - padding;
 }
 
 
@@ -159,6 +189,7 @@ int main(){
 	byte decoded[128] = {0};
 
 	n = decode(encoded, n, decoded, sizeof(decoded) - 1);
+	printf("(%zu) ", n);
 	print_bytes("dec", decoded, n);
 	printf("%s\n", decoded);
 
