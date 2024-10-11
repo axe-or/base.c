@@ -8,6 +8,7 @@
 #include <stdalign.h>
 #include <stdbool.h>
 #include <stdnoreturn.h>
+#include <limits.h>
 
 typedef int8_t  i8;
 typedef int16_t i16;
@@ -33,16 +34,6 @@ typedef double f64;
 typedef char const * cstring;
 
 static inline
-int arch_is_big_endian(){
-	union {
-		u16 x;
-		u8  b[2];
-	} u;
-	u.x = 1;
-	return u.b[1] == 1;
-}
-
-static inline
 void swap_bytes_raw(byte* data, isize len){
 	for(isize i = 0; i < (len / 2); i += 1){
 		byte temp = data[i];
@@ -54,7 +45,8 @@ void swap_bytes_raw(byte* data, isize len){
 #define swap_bytes(Ptr) swap_bytes_raw((byte*)(Ptr), sizeof(*(Ptr)))
 
 _Static_assert(sizeof(f32) == 4 && sizeof(f64) == 8, "Bad float size");
-_Static_assert(sizeof(isize) == sizeof(usize), "Bad (i/u)size");
+_Static_assert(sizeof(isize) == sizeof(usize), "Mismatched (i/u)size");
+_Static_assert(CHAR_BIT == 8, "Invalid char size");
 
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))
