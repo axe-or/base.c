@@ -12,8 +12,13 @@
 // #include "generic/dynamic_array.h"
 
 int main(int argc, char** argv){
-	switch(context_endianness){
-	case Endian_Big: printf("%08x Big\n", context_endianness);
-	case Endian_Little:printf("%08x Little\n", context_endianness);
-	}
+	printf(
+		"Context:\n"
+		"    Compiler: %s\n"
+		"    Endianess: %s\n",
+
+		context_compiler_vendor_names[context_compiler_vendor],
+		context_endianness == Ctx_Endian_Big ? "Big" : "Little"
+	);
+
 }
