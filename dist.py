@@ -1,12 +1,16 @@
 from os import listdir, path, mkdir
 from shutil import copy as file_copy
 from zipfile import ZIP_DEFLATED, ZipFile
+from math import ceil
 
 def remove_includes(data: str, rem_set: list[str]):
     for rm in rem_set:
         data = data.replace(f'#include "{rm}"', f'/* #include "{rm}" */')
         data = data.replace(f'#include "./{rm}"', f'/* #include "./{rm}" */')
     return data
+
+def to_kib(n: int):
+    return int(ceil(n / 1024))
 
 def main():
     sources = glob_extension('src', '.c', exclude=['main.c', 'base.c'])
@@ -45,7 +49,7 @@ def main():
                 data.append(code.replace('#pragma once', ''))
             data.append('')
         n = amalgam.write('\n'.join(data))
-        print(f'Wrote {n}B to base.h')
+        print(f'Created amalgamation file: base.h ({to_kib(n)}KiB)')
 
     # Create .c amalagamation
     with open(path.join(DIR, 'base.c'), 'w') as amalgam:
@@ -59,7 +63,7 @@ def main():
         data.append('')
 
         n = amalgam.write('\n'.join(data))
-        print(f'Wrote {n}B to base.c')
+        print(f'Created amalgamation file: base.c ({to_kib(n)}KiB)')
 
     file_copy('LICENSE', DIR)
 
@@ -67,7 +71,7 @@ def main():
         zf.mkdir(DIR)
         for header in listdir(DIR):
             zf.write(path.join(DIR, header))
-    print(f'Created base.zip ({path.getsize("base.zip") // 1024}KiB)')
+    print(f'Created base.zip ({to_kib(path.getsize("base.zip"))}KiB)')
 
 
 def glob_extension(dirpath: str, ext: str, exclude = None):
