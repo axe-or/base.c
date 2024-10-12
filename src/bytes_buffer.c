@@ -22,7 +22,7 @@ isize buffer_io_func(void* impl, IO_Operation op, byte* data, isize len){
 
 bool buffer_init(Bytes_Buffer* bb, Mem_Allocator allocator, isize initial_cap){
 	bb->allocator = allocator;
-	bb->data = New(byte, initial_cap, allocator);
+	bb->data = mem_new(byte, initial_cap, allocator);
 
 	if(bb->data != NULL){
 		bb->cap = initial_cap;
@@ -71,7 +71,7 @@ bool buffer_write(Bytes_Buffer* bb, byte const* bytes, isize len){
 }
 
 bool buffer_resize(Bytes_Buffer* bb, isize new_size){
-	byte* new_data = New(byte, new_size, bb->allocator);
+	byte* new_data = mem_new(byte, new_size, bb->allocator);
 	if(new_data == NULL){ return false; }
 
 	mem_copy(new_data, bb->data, min(new_size, bb->len));

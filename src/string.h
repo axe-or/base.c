@@ -4,8 +4,6 @@
 #include "memory.h"
 #include "utf8.h"
 
-// Helper to use with printf "%.*s"
-#define FmtString(str_) (int)((str_).len), (str_).data
 
 typedef struct {
 	isize len;

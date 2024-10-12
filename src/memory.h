@@ -3,7 +3,10 @@
 #include "prelude.h"
 #include "assert.h"
 
-#define New(T_, N_, Al_) mem_alloc((Al_), sizeof(T_) * (N_), alignof(T_))
+#define mem_new(T_, N_, Al_) mem_alloc((Al_), sizeof(T_) * (N_), alignof(T_))
+
+// Helper to use with printf "%.*s"
+#define fmt_bytes(buf) (int)((buf).len), (buf).data
 
 typedef struct {
 	byte* data;

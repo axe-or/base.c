@@ -23,7 +23,7 @@ String str_from_bytes(byte const* data, isize length){
 }
 
 String str_concat(String a, String b, Mem_Allocator allocator){
-	byte* data = New(byte, a.len + b.len, allocator);
+	byte* data = mem_new(byte, a.len + b.len, allocator);
 	String s = {0};
 	if(data != NULL){
 		mem_copy(&data[0], a.data, a.len);
@@ -81,7 +81,7 @@ String str_sub(String s, isize start, isize byte_count){
 }
 
 String str_clone(String s, Mem_Allocator allocator){
-	char* mem = New(char, s.len, allocator);
+	char* mem = mem_new(char, s.len, allocator);
 	if(mem == NULL){ return EMPTY; }
 	return (String){
 		.data = (byte const *)mem,
